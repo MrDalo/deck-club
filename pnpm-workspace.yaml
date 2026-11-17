@@ -12,7 +12,7 @@ catalog:
   # script runs it by path, because its bin is also named `tsc`.
   # `typescript` stays on 5.9 as the JavaScript API that typescript-eslint,
   # knip and Next's build-time check load; TS 7.0 has no stable API yet.
-  typescript: ^5.9.3
+  typescript: ^7.0.2
   typescript-native: npm:typescript@^7.0.2
   '@types/node': ^22.20.5
   prettier: ^3.9.10
