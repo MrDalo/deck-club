@@ -1,0 +1,8 @@
+{
+  "extends": "@deck-club/config/tsconfig/library.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": "."
+  },
+  "include": ["src", "*.ts"]
+}

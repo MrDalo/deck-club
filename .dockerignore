@@ -1,0 +1,28 @@
+# Build context is the repository root for every image. Keep it small and
+# keep secrets out of it: nothing below may ever reach an image layer.
+.env
+.env.*
+**/.env
+**/.env.*
+
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+**/coverage
+**/*.tsbuildinfo
+.pnpm-store
+data
+**/*.db
+
+.git
+.github
+.claude
+.agents
+.vscode
+docs
+brand
+*.md
+**/Dockerfile
+compose*.yml
+docker-compose*.yml

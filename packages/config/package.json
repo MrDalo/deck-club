@@ -1,0 +1,33 @@
+{
+  "name": "@deck-club/config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared ESLint, tsconfig, Prettier and Vitest presets for the workspace",
+  "exports": {
+    "./eslint/base": "./eslint/base.js",
+    "./eslint/library": "./eslint/library.js",
+    "./eslint/nest": "./eslint/nest.js",
+    "./eslint/web": "./eslint/web.js",
+    "./prettier": "./prettier/index.js",
+    "./tsconfig/*": "./tsconfig/*",
+    "./vitest": {
+      "types": "./vitest/base.d.ts",
+      "default": "./vitest/base.js"
+    }
+  },
+  "dependencies": {
+    "@eslint/js": "catalog:",
+    "@next/eslint-plugin-next": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "eslint": "catalog:",
+    "eslint-config-prettier": "catalog:",
+    "eslint-import-resolver-typescript": "catalog:",
+    "eslint-plugin-boundaries": "catalog:",
+    "eslint-plugin-react-hooks": "catalog:",
+    "globals": "catalog:",
+    "typescript": "catalog:",
+    "typescript-eslint": "catalog:",
+    "vitest": "catalog:"
+  }
+}

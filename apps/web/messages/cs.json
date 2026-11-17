@@ -1,0 +1,150 @@
+{
+  "brand": {
+    "name": "Deck Club",
+    "description": "Bezplatné kartičky s otevřeným kódem a opakováním v rozestupech. Kartičky ti vytvoří tvůj vlastní AI asistent."
+  },
+  "nav": {
+    "skipToContent": "Přeskočit na obsah",
+    "decks": "Balíčky",
+    "connectAi": "Připoj svou AI",
+    "signIn": "Přihlásit se",
+    "signOut": "Odhlásit se",
+    "language": "Jazyk",
+    "mainLabel": "Hlavní navigace"
+  },
+  "locales": {
+    "en": "English",
+    "sk": "Slovenčina",
+    "cs": "Čeština"
+  },
+  "landing": {
+    "title": "Zapamatuj si, co se naučíš.",
+    "lead": "Požádej Claude, ChatGPT nebo Codex, ať z článku udělá kartičky. Opakuj je tu pár minut denně, sám nebo se svým klubem.",
+    "start": "Začni se svým e-mailem",
+    "connect": "Podívej se, jak se AI připojuje",
+    "points": {
+      "free": "Zdarma a s otevřeným kódem, bez reklam a sledování.",
+      "ai": "Kartičky dělá tvoje AI. Deck Club sám nikdy AI nevolá.",
+      "schedule": "Ověřený algoritmus opakování rozhoduje, co a kdy se vrátí."
+    },
+    "sampleFront": "Co dělá mitochondrie?",
+    "sampleBack": "Mění potravu na energii, kterou buňka využije.",
+    "sampleBadge": "Přidal Claude"
+  },
+  "auth": {
+    "signIn": {
+      "title": "Přihlas se do Deck Club",
+      "lead": "Pošleme ti jednorázový odkaz. Žádné heslo si nemusíš pamatovat.",
+      "emailLabel": "E-mail",
+      "emailPlaceholder": "ty@example.com",
+      "submit": "Pošli mi přihlašovací odkaz",
+      "sending": "Odesílá se…",
+      "sentTitle": "Zkontroluj si schránku",
+      "sentLead": "Přihlašovací odkaz jsme poslali na {email}. Otevři ho na tomto zařízení.",
+      "useAnother": "Použít jiný e-mail",
+      "failed": "Odkaz se nepodařilo odeslat. Počkej minutu a zkus to znovu."
+    },
+    "callbackFailed": "Platnost přihlašovacího odkazu vypršela nebo už byl použit. Vyžádej si nový."
+  },
+  "decks": {
+    "library": {
+      "title": "Tvoje balíčky",
+      "lead": "Všechny balíčky, které vytvoříš tady nebo přes svého AI asistenta.",
+      "cardCount": "{count, plural, =0 {Zatím žádné kartičky} one {# kartička} few {# kartičky} other {# kartiček}}",
+      "emptyTitle": "Zatím žádné balíčky",
+      "emptyLead": "Vytvoř svůj první balíček níže nebo o to požádej svého AI asistenta.",
+      "loading": "Načítají se tvoje balíčky…",
+      "loadFailed": "Tvoje balíčky se nepodařilo načíst."
+    },
+    "create": {
+      "title": "Nový balíček",
+      "titleLabel": "Název",
+      "titlePlaceholder": "Španělská slovesa A1",
+      "languageLabel": "Jazyk kartiček",
+      "descriptionLabel": "Popis",
+      "descriptionHint": "Nepovinné. Jedna věta o tom, co balíček pokrývá.",
+      "submit": "Vytvořit balíček",
+      "submitting": "Vytváří se…",
+      "failed": "Balíček se nepodařilo vytvořit."
+    },
+    "detail": {
+      "back": "Všechny balíčky",
+      "loading": "Načítá se balíček…",
+      "loadFailed": "Balíček se nepodařilo načíst.",
+      "notFound": "Tento balíček neexistuje nebo byl smazán.",
+      "delete": "Smazat balíček",
+      "confirmDelete": "Smazat „{title}“? Do 30 dní ho můžeš získat zpět.",
+      "deleteFailed": "Balíček se nepodařilo smazat.",
+      "cardsTitle": "Kartičky",
+      "emptyCards": "Zatím žádné kartičky. Napiš první výše nebo požádej svou AI, ať nějaké přidá."
+    },
+    "editor": {
+      "title": "Přidat kartičku",
+      "hint": "Napiš přední stranu, stiskni Tab, napiš zadní stranu, stiskni Enter. Další kartička je hned připravená.",
+      "typeLabel": "Typ kartičky",
+      "types": {
+        "basic": "Základní, z přední na zadní",
+        "reversible": "Oboustranná, oběma směry"
+      },
+      "frontLabel": "Přední strana",
+      "backLabel": "Zadní strana",
+      "extraLabel": "Doplněk",
+      "extraHint": "Nepovinné. Příklad, vysvětlení nebo zdroj.",
+      "submit": "Přidat kartičku",
+      "submitting": "Přidává se…",
+      "added": "Kartička přidána.",
+      "failed": "Kartičku se nepodařilo přidat.",
+      "previewLabel": "Náhled",
+      "previewFront": "Přední strana kartičky",
+      "previewBack": "Zadní strana kartičky"
+    },
+    "card": {
+      "addedBy": "Přidal {client}",
+      "reversible": "Oboustranná",
+      "edit": "Upravit",
+      "save": "Uložit",
+      "cancel": "Zrušit",
+      "delete": "Smazat",
+      "deleteLabel": "Smazat kartičku „{front}“",
+      "editLabel": "Upravit kartičku „{front}“",
+      "saveFailed": "Kartičku se nepodařilo uložit.",
+      "deleteFailed": "Kartičku se nepodařilo smazat."
+    }
+  },
+  "connectAi": {
+    "title": "Připoj svou AI",
+    "lead": "Deck Club má MCP server. Přidej ho do svého asistenta a ten za tebe vypíše balíčky, vytvoří nové a přidá kartičky. Využívá tvoje vlastní AI předplatné, ne naše.",
+    "serverUrl": "URL serveru",
+    "copy": "Kopírovat",
+    "copied": "Zkopírováno",
+    "tokenTitle": "Přístupový token",
+    "tokenLead": "Dokud nebude hotové přihlášení asistentů jedním kliknutím, asistent používá dočasný přístupový token. Platí hodinu. Zacházej s ním jako s heslem.",
+    "copyToken": "Kopírovat přístupový token",
+    "tokenFailed": "Přihlas se znovu a získej nový token.",
+    "clientsTitle": "Přidej server do svého asistenta",
+    "claudeCode": "Claude Code",
+    "claudeCodeStep": "Spusť tohle v terminálu a místo TOKEN vlož token:",
+    "otherClients": "Claude, ChatGPT a Codex",
+    "otherClientsStep": "Přidej vlastní konektor s URL serveru výše a token pošli jako Bearer token v hlavičce Authorization.",
+    "examplesTitle": "Zkus se zeptat",
+    "examples": {
+      "make": "Udělej 20 kartiček z tohoto článku a přidej je do nového balíčku Biologie.",
+      "list": "Jaké balíčky mám v Deck Club?",
+      "add": "Přidej pět sloves, která jsme právě procvičili, do mého španělského balíčku."
+    }
+  },
+  "validation": {
+    "too_small": "Vyplň toto pole.",
+    "too_big": "Text je příliš dlouhý.",
+    "invalid_format": "Použij platný formát.",
+    "custom": "Použij obyčejný text: HTML značky nejsou povoleny.",
+    "invalid": "Zkontroluj toto pole."
+  },
+  "errors": {
+    "retry": "Zkusit znovu",
+    "reference": "Reference: {traceId}",
+    "notFoundTitle": "Stránka nenalezena",
+    "notFoundLead": "Stránka, kterou hledáš, neexistuje.",
+    "home": "Přejít na balíčky"
+  }
+}

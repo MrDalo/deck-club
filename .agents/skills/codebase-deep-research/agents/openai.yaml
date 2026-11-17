@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codebase Deep Research"
+  short_description: "Multi-agent local codebase investigation"
+  default_prompt: "Use $codebase-deep-research to investigate this repository and explain how a subsystem, workflow, or architecture area works."

@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{AREA} — PR #{NUMBER} walkthrough</title>
+<!--
+  Standalone source for a generated PR walkthrough.
+
+  Preserve:
+  - the sticky controls, intro, verified stats, badge legend, and nested tree;
+  - the problem -> principles -> numbered phases -> restraint -> verification order;
+  - the empty #diffs stash before injection and the renderer below;
+  - file-node `diff` links and `diffFile` keys.
+
+  Replace every brace placeholder and every example node with evidence from the
+  actual PR. The deterministic injector owns everything inside #diffs.
+
+  GitHub file links use:
+    {PR_URL}/files#diff-{SHA256_EXACT_REPOSITORY_RELATIVE_DESTINATION_PATH}
+  Compute the hash without a newline:
+    printf '%s' 'path/to/file.ts' | shasum -a 256
+  Append R{line} for the new side or L{line} for the old side only after checking
+  that line in the PR view.
+-->
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #181b24;
+    --panel: #202430;
+    --panel-deep: #141720;
+    --border: #343a4a;
+    --guide: #3b4254;
+    --text: #b4bbd4;
+    --bright: #f8f9ff;
+    --muted: #7e879f;
+    --accent: #a9d7ff;
+    --mint: #66dfc1;
+    --yellow: #f5e79b;
+    --blue: #8bdcf4;
+    --rose: #e38bb7;
+    --danger: #cb6c9f;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html { background: var(--bg); }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 350;
+    line-height: 1.7;
+  }
+  a { color: var(--accent); }
+  code, pre { font-family: var(--mono); }
+  code { background: var(--panel); padding: 0.1em 0.35em; }
+  button, .badge, .diff-link, .stat { font-family: var(--mono); }
+
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+    padding: 0.7rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    background: color-mix(in srgb, var(--bg) 94%, transparent);
+    backdrop-filter: blur(8px);
+  }
+  .topbar h1 {
+    margin: 0 auto 0 0;
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+  button {
+    padding: 0.38rem 0.7rem;
+    border: 1px solid var(--accent);
+    background: transparent;
+    color: var(--accent);
+    cursor: pointer;
+    font-size: 0.68rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  button:hover, button:focus-visible { background: var(--accent); color: var(--bg); }
+  button:focus-visible, .row:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 50%, transparent); outline-offset: 2px; }
+
+  main { max-width: 1120px; margin: 0 auto; padding: 1.6rem 1.25rem 7rem; }
+  .intro {
+    padding: 1.4rem 1.6rem;
+    border: 1px solid var(--border);
+    background: var(--panel-deep);
+  }
+  .intro h2 { margin: 0 0 0.65rem; color: var(--bright); font-size: 1.45rem; }
+  .intro p { max-width: 82ch; margin: 0.45rem 0; }
+  .stats { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1rem; }
+  .stat {
+    min-width: 9rem;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--muted);
+    font-size: 0.62rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .stat strong { display: block; color: var(--accent); font-size: 0.88rem; letter-spacing: 0; text-transform: none; }
+  .stat strong.ok { color: var(--mint); }
+
+  .legend { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin: 1.15rem 0 0.8rem; color: var(--muted); font-size: 0.68rem; }
+  .badge {
+    flex: none;
+    padding: 0.08rem 0.38rem;
+    border: 1px solid currentColor;
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+  .b-step { color: var(--accent); }
+  .b-why { color: var(--rose); }
+  .b-principle { color: var(--yellow); }
+  .b-new, .b-verify { color: var(--mint); }
+  .b-rewritten { color: var(--yellow); }
+  .b-modified { color: var(--blue); }
+  .b-deleted { color: var(--bright); background: var(--danger); border-color: var(--danger); }
+  .b-kept { color: var(--muted); }
+  .b-ship { color: var(--bg); background: var(--mint); border-color: var(--mint); }
+
+  .node > .row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.55rem;
+    padding: 0.48rem 0.58rem;
+    border: 1px solid transparent;
+    cursor: pointer;
+  }
+  .node > .row:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+  .node.open > .row { border-color: var(--border); background: var(--panel); }
+  .chevron { width: 0.8rem; flex: none; color: var(--muted); font: 0.62rem var(--mono); transition: transform 100ms; }
+  .node.open > .row .chevron { transform: rotate(90deg); }
+  .title { color: var(--bright); font-weight: 650; white-space: nowrap; }
+  .depth-0 > .row .title { font-size: 1.04rem; }
+  .summary-inline { min-width: 0; flex: 1; overflow: hidden; color: var(--muted); font-size: 0.86rem; text-overflow: ellipsis; white-space: nowrap; }
+  .node.open > .row .summary-inline { display: none; }
+  .diff-link {
+    flex: none;
+    padding: 0.06rem 0.35rem;
+    border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+    color: var(--accent);
+    font-size: 0.61rem;
+    font-weight: 700;
+    text-decoration: none;
+    text-transform: uppercase;
+  }
+  .diff-link:hover { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+
+  .content { display: none; max-width: 86ch; padding: 0.3rem 1rem 0.9rem 2.3rem; }
+  .node.open > .content { display: block; }
+  .summary-full { margin-bottom: 0.55rem; color: var(--muted); font-size: 0.88rem; }
+  .body p { margin: 0.5rem 0; }
+  .body ul { margin: 0.45rem 0; padding-left: 1.3rem; }
+  .body li + li { margin-top: 0.25rem; }
+  .children { display: none; margin-left: 0.9rem; padding-left: 0.9rem; border-left: 1px solid var(--guide); }
+  .node.open > .children { display: block; }
+
+  pre {
+    margin: 0.7rem 0;
+    padding: 0.75rem 0.85rem;
+    overflow: auto;
+    border: 1px solid var(--border);
+    background: var(--panel-deep);
+    color: var(--text);
+    font-size: 0.75rem;
+    line-height: 1.55;
+    white-space: pre;
+  }
+  .before-after { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; margin: 0.7rem 0; }
+  .before-after > section { min-width: 0; }
+  .before-after h4 { margin: 0 0 0.25rem; font: 700 0.62rem var(--mono); letter-spacing: 0.06em; text-transform: uppercase; }
+  .before h4 { color: var(--rose); }
+  .after h4 { color: var(--mint); }
+  .before pre { border-color: color-mix(in srgb, var(--rose) 45%, transparent); }
+  .after pre { border-color: color-mix(in srgb, var(--mint) 45%, transparent); }
+
+  .diff-details { margin-top: 0.65rem; border: 1px solid var(--border); background: var(--panel-deep); }
+  .diff-details summary { padding: 0.45rem 0.7rem; cursor: pointer; color: var(--muted); font: 700 0.66rem var(--mono); text-transform: uppercase; }
+  .diff-details summary:hover { color: var(--accent); }
+  .diff-details .meta { color: var(--mint); }
+  pre.diff { max-height: 60vh; margin: 0; padding: 0.45rem 0; border: 0; border-top: 1px solid var(--border); }
+  pre.diff .line { display: block; padding: 0 0.8rem; }
+  .add { color: #bcf5e7; background: #66dfc11a; }
+  .del { color: #f3bdd7; background: #cb6c9f20; }
+  .hunk { color: var(--accent); background: #a9d7ff12; }
+  .meta-line { color: var(--muted); }
+
+  @media (max-width: 760px) {
+    .topbar h1 { width: 100%; }
+    .before-after { grid-template-columns: 1fr; }
+    .title { white-space: normal; }
+    .summary-inline { display: none; }
+    .content { padding-left: 1.25rem; }
+    main { padding-inline: 0.8rem; }
+  }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <h1>{AREA} · PR #{NUMBER} · {SHORT_THEME}</h1>
+  <button id="expand-top" type="button">Expand top level</button>
+  <button id="expand-all" type="button">Expand everything</button>
+  <button id="collapse-all" type="button">Collapse all</button>
+</header>
+
+<main>
+  <section class="intro">
+    <h2>The change, top to bottom</h2>
+    <p>{Two or three sentences explaining the problem, the implementation shape, and the resulting behavior.}</p>
+    <p><strong>Read top to bottom.</strong> {Explain how the numbered phases compose into the final change.}</p>
+    <div class="stats">
+      <div class="stat"><strong>{BEFORE → AFTER}</strong>{MEANINGFUL_METRIC}</div>
+      <div class="stat"><strong>+{ADDITIONS} / −{DELETIONS}</strong>{FILE_COUNT} files</div>
+      <div class="stat"><strong class="ok">{OBSERVED_CHECKS}</strong>verification</div>
+      <div class="stat"><strong>{SHORT_SHA}</strong>head commit</div>
+    </div>
+  </section>
+
+  <div class="legend" aria-label="Walkthrough badge legend">
+    <span>Badges:</span>
+    <span class="badge b-step">step</span>
+    <span class="badge b-why">why</span>
+    <span class="badge b-principle">principle</span>
+    <span class="badge b-new">new</span>
+    <span class="badge b-rewritten">rewritten</span>
+    <span class="badge b-modified">modified</span>
+    <span class="badge b-deleted">deleted</span>
+    <span class="badge b-kept">kept</span>
+    <span class="badge b-verify">verify</span>
+    <span class="badge b-ship">ship</span>
+  </div>
+
+  <div id="tree"></div>
+</main>
+
+<!-- The injector replaces this empty stash with exact sentinel markers and one
+     flush-left text/plain script per diffFile. Generated content may contain
+     arbitrary diff text; only literal closing script tags become <\/script>. -->
+<div id="diffs" hidden>
+</div>
+
+<script>
+/* Replace this entire example data set. Valid badges:
+   step, why, principle, new, rewritten, modified, deleted, kept, verify, ship.
+
+   Every changed-file node has:
+   - diff: the GitHub file anchor, optionally with a verified R/L line;
+   - diffFile: the exact repository-relative destination path used by the diff.
+*/
+const PR = "{PR_URL}";
+
+const NODES = [
+  {
+    badge: "why",
+    title: "0 · Starting point",
+    summary: "{PROBLEM_SUMMARY}",
+    body: "<p>{WHY_THE_OLD_STATE_HURT_USERS_OR_MAINTAINERS}</p>",
+    children: [
+      {
+        badge: "why",
+        title: "{SPECIFIC_PROBLEM}",
+        summary: "{EVIDENCED_SYMPTOM}",
+        body: "<ul><li>{SYMPTOM_ONE}</li><li>{SYMPTOM_TWO}</li></ul>"
+      }
+    ]
+  },
+  {
+    badge: "principle",
+    title: "Operating principles",
+    summary: "{RULES_THAT_EXPLAIN_THE_DESIGN}",
+    children: [
+      {
+        badge: "principle",
+        title: "{PRINCIPLE_NAME}",
+        summary: "{ONE_LINE_RULE}",
+        body: '<div class="before-after">' +
+          '<section class="before"><h4>Before</h4><pre>{OLD_SHAPE}</pre></section>' +
+          '<section class="after"><h4>After</h4><pre>{NEW_SHAPE}</pre></section>' +
+          '</div><p>{WHY_THE_NEW_SHAPE_WINS}</p>'
+      }
+    ]
+  },
+  {
+    badge: "step",
+    title: "1 · {FIRST_IMPLEMENTATION_PHASE}",
+    summary: "{PHASE_OUTCOME}",
+    children: [
+      {
+        badge: "new",
+        title: "path/to/new-file.ts",
+        summary: "{NEW_FILE_OWNERSHIP}",
+        diff: PR + "/files#diff-{SHA256_NEW_FILE}",
+        diffFile: "path/to/new-file.ts",
+        body: "<ul><li>{KEY_EXPORT_OR_RESPONSIBILITY}</li></ul>"
+      },
+      {
+        badge: "modified",
+        title: "path/to/modified-file.ts",
+        summary: "{TARGETED_CHANGE}",
+        diff: PR + "/files#diff-{SHA256_MODIFIED_FILE}",
+        diffFile: "path/to/modified-file.ts",
+        body: '<p><a href="' + PR + '/files#diff-{SHA256_MODIFIED_FILE}R{LINE}" target="_blank" rel="noopener">{IMPORTANT_NEW_LINE} ↗</a></p>'
+      }
+    ]
+  },
+  {
+    badge: "step",
+    title: "2 · {SECOND_IMPLEMENTATION_PHASE}",
+    summary: "{PHASE_OUTCOME}"
+  },
+  {
+    badge: "kept",
+    title: "Deliberately not changed",
+    summary: "{RESTRAINT_A_REVIEWER_MIGHT_QUESTION}",
+    children: [
+      {
+        badge: "kept",
+        title: "{UNCHANGED_AREA}",
+        summary: "{WHY_LEAVING_IT_ALONE_IS_CORRECT}"
+      }
+    ]
+  },
+  {
+    badge: "verify",
+    title: "Verification and ship",
+    summary: "{OBSERVED_GATES_AND_REMOTE_STATE}",
+    children: [
+      {
+        badge: "verify",
+        title: "Checks",
+        summary: "{COMMANDS_AND_RESULTS}"
+      },
+      {
+        badge: "ship",
+        title: "Commit {SHORT_SHA} pushed",
+        summary: "{COMMIT_MESSAGE}",
+        diff: PR + "/commits/{FULL_SHA}",
+        body: "<p>{FILE_COUNT} files, +{ADDITIONS}/−{DELETIONS}, pushed to <code>{REMOTE_BRANCH}</code>.</p>"
+      }
+    ]
+  }
+];
+
+const tree = document.getElementById("tree");
+
+function diffTextFor(path) {
+  for (const element of document.querySelectorAll("#diffs [data-diff]")) {
+    if (element.getAttribute("data-diff") === path) {
+      return element.textContent
+        .replace(/^\n/, "")
+        .replace(/\s+$/, "")
+        .replace(/<\\\/script>/g, "<\/script>");
+    }
+  }
+  return "";
+}
+
+function diffStats(text) {
+  let additions = 0;
+  let deletions = 0;
+  for (const line of text.split("\n")) {
+    if (line.startsWith("+") && !line.startsWith("+++")) additions += 1;
+    if (line.startsWith("-") && !line.startsWith("---")) deletions += 1;
+  }
+  return { additions, deletions };
+}
+
+function renderDiff(text) {
+  const pre = document.createElement("pre");
+  pre.className = "diff";
+  for (const line of text.replace(/\n$/, "").split("\n")) {
+    const span = document.createElement("span");
+    span.className = "line";
+    if (line.startsWith("@@")) span.classList.add("hunk");
+    else if (/^(diff |index |--- |\+\+\+ |new file|deleted file|rename |similarity )/.test(line)) span.classList.add("meta-line");
+    else if (line.startsWith("+")) span.classList.add("add");
+    else if (line.startsWith("-")) span.classList.add("del");
+    span.textContent = line || " ";
+    pre.appendChild(span);
+  }
+  return pre;
+}
+
+function buildNode(node, depth) {
+  const wrapper = document.createElement("section");
+  wrapper.className = `node depth-${depth}`;
+
+  const row = document.createElement("div");
+  row.className = "row";
+  row.tabIndex = 0;
+  row.setAttribute("role", "button");
+  row.setAttribute("aria-expanded", "false");
+
+  const chevron = document.createElement("span");
+  chevron.className = "chevron";
+  chevron.textContent = "▶";
+  row.appendChild(chevron);
+
+  const badge = document.createElement("span");
+  badge.className = `badge b-${node.badge}`;
+  badge.textContent = node.badge;
+  row.appendChild(badge);
+
+  const title = document.createElement("span");
+  title.className = "title";
+  title.textContent = node.title;
+  row.appendChild(title);
+
+  if (node.diff) {
+    const link = document.createElement("a");
+    link.className = "diff-link";
+    link.href = node.diff;
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.textContent = "diff ↗";
+    link.addEventListener("click", event => event.stopPropagation());
+    row.appendChild(link);
+  }
+
+  const inlineSummary = document.createElement("span");
+  inlineSummary.className = "summary-inline";
+  inlineSummary.textContent = node.summary || "";
+  row.appendChild(inlineSummary);
+  wrapper.appendChild(row);
+
+  const content = document.createElement("div");
+  content.className = "content";
+  if (node.summary) {
+    const fullSummary = document.createElement("div");
+    fullSummary.className = "summary-full";
+    fullSummary.textContent = node.summary;
+    content.appendChild(fullSummary);
+  }
+  if (node.body) {
+    const body = document.createElement("div");
+    body.className = "body";
+    body.innerHTML = node.body;
+    content.appendChild(body);
+  }
+
+  const diffText = node.diffFile ? diffTextFor(node.diffFile) : "";
+  if (diffText) {
+    const counts = diffStats(diffText);
+    const details = document.createElement("details");
+    details.className = "diff-details";
+    const summary = document.createElement("summary");
+    summary.innerHTML = `Full diff <span class="meta">+${counts.additions} / −${counts.deletions}</span>`;
+    details.appendChild(summary);
+    details.appendChild(renderDiff(diffText));
+    content.appendChild(details);
+  }
+  wrapper.appendChild(content);
+
+  if (node.children && node.children.length > 0) {
+    const children = document.createElement("div");
+    children.className = "children";
+    for (const child of node.children) children.appendChild(buildNode(child, depth + 1));
+    wrapper.appendChild(children);
+  }
+
+  const toggle = () => {
+    const open = wrapper.classList.toggle("open");
+    row.setAttribute("aria-expanded", String(open));
+  };
+  row.addEventListener("click", toggle);
+  row.addEventListener("keydown", event => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      toggle();
+    }
+  });
+  return wrapper;
+}
+
+for (const node of NODES) tree.appendChild(buildNode(node, 0));
+
+const nodes = () => tree.querySelectorAll(".node");
+function setOpen(node, open) {
+  node.classList.toggle("open", open);
+  const row = node.querySelector(":scope > .row");
+  if (row) row.setAttribute("aria-expanded", String(open));
+}
+document.getElementById("expand-top").addEventListener("click", () => {
+  for (const node of nodes()) setOpen(node, node.classList.contains("depth-0"));
+});
+document.getElementById("expand-all").addEventListener("click", () => {
+  for (const node of nodes()) setOpen(node, true);
+});
+document.getElementById("collapse-all").addEventListener("click", () => {
+  for (const node of nodes()) setOpen(node, false);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{Artifact title}</title>
+  <!--
+    TDD ARTIFACT TEMPLATE
+
+    Copy the complete style block unchanged. Replace only the example-free body
+    marker with one focused technical-design view. Use realistic labels and keep
+    the artifact aligned with the TDD's terminology. This palette belongs to the
+    standalone explanation, not to the product being designed.
+  -->
+  <style>
+    :root {
+      --bg: #1b1e28;
+      --bg-deep: #171922;
+      --surface: #232631;
+      --surface-strong: #303340;
+      --border: #3a3d4a;
+      --text: #a6accd;
+      --bright: #ffffff;
+      --muted: rgba(166, 172, 205, 0.62);
+      --accent: #add7ff;
+      --mint: #5de4c7;
+      --blue: #89ddff;
+      --yellow: #fffac2;
+      --rose: #d0679d;
+      --pink: #f087bd;
+      --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --mono: "IBM Plex Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    }
+
+    * { box-sizing: border-box; border-radius: 0; }
+    html { color-scheme: dark; }
+    body {
+      margin: 0;
+      padding: 28px 22px 120px;
+      background: var(--bg);
+      color: var(--text);
+      font: 300 15px/1.7 var(--sans);
+      letter-spacing: 0.02em;
+      -webkit-font-smoothing: antialiased;
+    }
+    ::selection { background: rgba(173, 215, 255, 0.18); }
+    .shell { width: min(1120px, 100%); margin: 0 auto; }
+
+    h1, h2, h3, h4 {
+      margin: 1.6em 0 0.5em;
+      color: var(--accent);
+      font-weight: 600;
+      line-height: 1.3;
+    }
+    h1 { margin-top: 0; font-size: 24px; letter-spacing: -0.02em; }
+    h2 { font-size: 19px; letter-spacing: -0.015em; }
+    h3 { font-size: 16px; }
+    h4, .eyebrow {
+      color: var(--muted);
+      font: 600 10px/1.4 var(--mono);
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+    }
+    p { max-width: 84ch; margin: 0 0 1em; line-height: 1.85; }
+    strong { color: var(--bright); font-weight: 600; }
+    a { color: var(--accent); text-underline-offset: 2px; }
+    a:hover { color: var(--blue); }
+    ul, ol { max-width: 84ch; margin: 0.5em 0 1em; padding-left: 1.6em; }
+    li { line-height: 1.75; }
+    li + li { margin-top: 0.35em; }
+    li::marker { color: var(--muted); }
+    hr { margin: 2em 0; border: 0; border-top: 1px solid var(--border); }
+
+    code {
+      padding: 0.1em 0.35em;
+      background: var(--surface-strong);
+      color: var(--text);
+      font: 0.875em/1.5 var(--mono);
+    }
+    pre {
+      overflow-x: auto;
+      margin: 0.8em 0;
+      padding: 13px 15px;
+      border: 1px solid var(--border);
+      background: var(--bg-deep);
+      color: var(--text);
+      font: 12.5px/1.7 var(--mono);
+      tab-size: 2;
+      white-space: pre;
+    }
+    pre code { padding: 0; background: transparent; font-size: inherit; }
+    pre .keyword { color: var(--mint); }
+    pre .string { color: var(--blue); }
+    pre .comment { color: var(--muted); font-style: italic; }
+    pre .function { color: var(--accent); }
+    blockquote, .callout {
+      margin: 1em 0;
+      padding: 8px 0 8px 16px;
+      border-left: 2px solid rgba(173, 215, 255, 0.45);
+      color: var(--muted);
+    }
+
+    table { width: 100%; margin: 1em 0; border-collapse: collapse; font-size: 13px; }
+    th, td { padding: 8px 11px; border: 1px solid var(--border); text-align: left; vertical-align: top; }
+    th { color: var(--muted); font: 600 10px/1.4 var(--mono); letter-spacing: 0.07em; text-transform: uppercase; }
+
+    .panel { margin: 1em 0; padding: 20px 22px; border: 1px solid var(--border); background: var(--bg-deep); }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .flow { display: flex; align-items: stretch; gap: 8px; margin: 1em 0; }
+    .node { flex: 1 1 0; min-width: 0; padding: 14px; border: 1px solid var(--border); background: var(--surface); }
+    .arrow { align-self: center; color: var(--accent); font: 600 16px/1 var(--mono); }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border: 1px solid currentColor;
+      font: 600 9px/1.4 var(--mono);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .is-new { color: var(--mint); background: rgba(93, 228, 199, 0.1); }
+    .is-changed { color: var(--blue); background: rgba(137, 221, 255, 0.1); }
+    .is-risk { color: var(--rose); background: rgba(208, 103, 157, 0.1); }
+    .is-decision { color: var(--pink); background: rgba(240, 135, 189, 0.1); }
+    .is-kept { color: var(--text); background: rgba(166, 172, 205, 0.08); }
+
+    .metric-grid { display: flex; flex-wrap: wrap; gap: 10px; margin: 1em 0; }
+    .metric { min-width: 130px; padding: 9px 13px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); font: 600 9px/1.5 var(--mono); letter-spacing: 0.07em; text-transform: uppercase; }
+    .metric b { display: block; color: var(--accent); font-size: 14px; font-weight: 500; letter-spacing: 0; text-transform: none; }
+
+    .before-after { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 1em 0; }
+    .before-after > section { min-width: 0; }
+    .label { margin-bottom: 5px; font: 600 9px/1.4 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; }
+    .before .label { color: var(--rose); }
+    .after .label { color: var(--mint); }
+    .before pre { border-color: rgba(208, 103, 157, 0.5); }
+    .after pre { border-color: rgba(93, 228, 199, 0.5); }
+
+    @media (max-width: 760px) {
+      body { padding-inline: 15px; }
+      .grid, .before-after { grid-template-columns: 1fr; }
+      .flow { flex-direction: column; }
+      .arrow { align-self: flex-start; transform: rotate(90deg); }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <!-- Replace this marker with one focused architecture, flow, code-shape, or comparison view. -->
+  </main>
+</body>
+</html>

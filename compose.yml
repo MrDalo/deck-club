@@ -1,0 +1,76 @@
+# Deck Club — the whole stack on one machine.
+#
+#   cp .env.example .env    # fill in the Supabase URL and publishable key
+#   docker compose --env-file .env up -d --build
+#
+# web http://localhost:3000 · mcp http://localhost:4100/mcp
+#
+# Topology: the three services share the private `deck-club` network and
+# reach each other by service name. Only `web` (for people) and `mcp` (for AI
+# assistants) publish a port, and only on 127.0.0.1. The `api`, which owns the
+# data and every rule, publishes nothing: the web app reaches it through its
+# server-side /api/v1 forwarder and the MCP server through API_INTERNAL_URL.
+# The network is not `internal: true` because the api fetches Supabase's
+# signing keys and the web server talks to Supabase Auth.
+
+name: deck-club
+
+x-node-service: &node-service
+  restart: unless-stopped
+  init: true
+  networks: [deck-club]
+
+services:
+  api:
+    <<: *node-service
+    image: localhost/deck-club-api:local
+    build: { context: ., dockerfile: apps/api/Dockerfile }
+    environment:
+      NODE_ENV: production
+      API_PORT: '4000'
+      LOG_FORMAT: json
+      DATABASE_URL: file:/data/deck-club.db
+      SUPABASE_URL: ${SUPABASE_URL:?SUPABASE_URL is required}
+    volumes:
+      - api-data:/data
+    expose: ['4000']
+
+  mcp:
+    <<: *node-service
+    image: localhost/deck-club-mcp:local
+    build: { context: ., dockerfile: apps/mcp/Dockerfile }
+    environment:
+      NODE_ENV: production
+      MCP_PORT: '4100'
+      LOG_FORMAT: json
+      API_INTERNAL_URL: http://api:4000
+      WEB_PUBLIC_URL: ${WEB_PUBLIC_URL:-http://localhost:3000}
+    ports: ['127.0.0.1:4100:4100']
+    depends_on:
+      api: { condition: service_healthy }
+
+  web:
+    <<: *node-service
+    image: localhost/deck-club-web:local
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:?NEXT_PUBLIC_SUPABASE_URL is required}
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:?NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY is required}
+        NEXT_PUBLIC_MCP_URL: ${NEXT_PUBLIC_MCP_URL:-http://localhost:4100/mcp}
+    environment:
+      NODE_ENV: production
+      PORT: '3000'
+      API_INTERNAL_URL: http://api:4000
+    ports: ['127.0.0.1:3000:3000']
+    depends_on:
+      api: { condition: service_healthy }
+
+networks:
+  deck-club:
+    name: deck-club-private
+    driver: bridge
+
+volumes:
+  api-data:

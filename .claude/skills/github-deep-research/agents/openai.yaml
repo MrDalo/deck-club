@@ -1,0 +1,4 @@
+interface:
+  display_name: "GitHub Deep Research"
+  short_description: "Deep research on GitHub repositories"
+  default_prompt: "Use $github-deep-research to analyze a GitHub repository, timeline, architecture, ecosystem, or competitive position with a structured report."
