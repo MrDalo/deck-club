@@ -1,0 +1,27 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": ["scripts/*.mjs"],
+      "project": ["*.js", "scripts/*.mjs"]
+    },
+    "packages/config": {
+      "entry": ["eslint/*.js", "prettier/*.js", "vitest/*.js"],
+      "project": ["**/*.js"],
+      "ignoreDependencies": ["eslint-import-resolver-typescript"]
+    },
+    "packages/contracts": {
+      "entry": ["src/index.ts"],
+      "project": ["src/**/*.ts"]
+    },
+    "apps/api": {
+      "project": ["src/**/*.ts", "test/**/*.ts"]
+    },
+    "apps/mcp": {
+      "project": ["src/**/*.ts", "test/**/*.ts"]
+    },
+    "apps/web": {
+      "project": ["src/**/*.{ts,tsx,css}"]
+    }
+  }
+}

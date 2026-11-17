@@ -1,0 +1,90 @@
+packages:
+  - apps/*
+  - packages/*
+
+# Single source of dependency versions. Every workspace package declares
+# "catalog:" and gets the version below, so two packages can never drift.
+catalog:
+  # tooling
+  turbo: ^2.11.2
+  # Two TypeScripts, on purpose (same split as the reference monorepo).
+  # `typescript-native` is TS 7, the compiler: every build and typecheck
+  # script runs it by path, because its bin is also named `tsc`.
+  # `typescript` stays on 5.9 as the JavaScript API that typescript-eslint,
+  # knip and Next's build-time check load; TS 7.0 has no stable API yet.
+  typescript: ^5.9.3
+  typescript-native: npm:typescript@^7.0.2
+  '@types/node': ^24.0.0
+  prettier: ^3.9.8
+  knip: ^6.37.0
+  rimraf: ^6.0.1
+  tsx: ^4.23.13
+  # lint
+  eslint: ^10.11.0
+  '@eslint/js': ^10.0.1
+  typescript-eslint: ^8.70.0
+  eslint-plugin-boundaries: ^7.2.0
+  eslint-import-resolver-typescript: ^4.4.5
+  eslint-config-prettier: ^10.1.8
+  eslint-plugin-react-hooks: ^7.1.1
+  '@next/eslint-plugin-next': ^16.3.5
+  globals: ^17.12.0
+  # test
+  vitest: ^5.0.1
+  '@vitest/coverage-v8': ^5.0.1
+  jsdom: 29.1.1
+  '@testing-library/react': 16.3.3
+  '@testing-library/dom': 10.4.2
+  '@testing-library/user-event': 14.6.8
+  '@testing-library/jest-dom': 6.10.0
+  unplugin-swc: ^1.6.0
+  '@swc/core': ^1.16.2
+  # contracts
+  zod: ^4.6.5
+  # backend
+  '@nestjs/core': ^12.0.3
+  '@nestjs/common': ^12.0.3
+  '@nestjs/platform-fastify': ^12.0.3
+  '@nestjs/testing': ^12.0.3
+  fastify: ^5.12.4
+  reflect-metadata: ^0.2.2
+  rxjs: ^7.8.2
+  jose: ^6.1.0
+  '@modelcontextprotocol/sdk': ^1.32.0
+  # data
+  drizzle-orm: ^0.45.2
+  drizzle-kit: ^0.31.10
+  '@libsql/client': ^0.18.0
+  # web
+  next: ^16.3.5
+  react: ^19.3.0
+  react-dom: ^19.3.0
+  '@types/react': ^19.3.0
+  '@types/react-dom': ^19.3.0
+  next-intl: ^4.15.0
+  react-hook-form: ^7.90.0
+  '@hookform/resolvers': ^7.0.0
+  '@tanstack/react-query': ^5.90.0
+  '@supabase/supabase-js': ^2.100.0
+  '@supabase/ssr': ^0.12.0
+  tailwindcss: ^4.3.3
+  '@tailwindcss/postcss': ^4.3.3
+  postcss: ^8.5.28
+  clsx: ^2.1.1
+  tailwind-merge: ^3.7.0
+  class-variance-authority: ^0.7.1
+  radix-ui: ^1.4.0
+
+# Supply chain: a version must be public for a day before install (minutes),
+# so a hijacked release is usually caught before it reaches us.
+minimumReleaseAge: 1440
+
+# Supply chain: only these dependencies may run install scripts. They compile
+# or fetch native binaries; everything else is denied by default.
+onlyBuiltDependencies:
+  - '@swc/core'
+  - esbuild
+  - unrs-resolver
+  - sharp
+  # next-intl's message watcher: the script only picks a prebuilt binary.
+  - '@parcel/watcher'

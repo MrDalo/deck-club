@@ -1,0 +1,150 @@
+{
+  "brand": {
+    "name": "Deck Club",
+    "description": "Free, open-source flashcards with spaced repetition. Your own AI assistant makes the cards."
+  },
+  "nav": {
+    "skipToContent": "Skip to content",
+    "decks": "Decks",
+    "connectAi": "Connect your AI",
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "language": "Language",
+    "mainLabel": "Main"
+  },
+  "locales": {
+    "en": "English",
+    "sk": "Slovenčina",
+    "cs": "Čeština"
+  },
+  "landing": {
+    "title": "Remember what you learn.",
+    "lead": "Ask Claude, ChatGPT or Codex to turn an article into cards. Review them here for a few minutes a day, alone or with your club.",
+    "start": "Start with your email",
+    "connect": "See how the AI connects",
+    "points": {
+      "free": "Free and open source, no ads, no tracking.",
+      "ai": "Your AI makes the cards. Deck Club never calls an AI itself.",
+      "schedule": "A proven spaced repetition schedule decides what comes back, and when."
+    },
+    "sampleFront": "What does a mitochondrion do?",
+    "sampleBack": "Turns food into energy the cell can use.",
+    "sampleBadge": "Added by Claude"
+  },
+  "auth": {
+    "signIn": {
+      "title": "Sign in to Deck Club",
+      "lead": "We send you a one-time link. No password to remember.",
+      "emailLabel": "Email",
+      "emailPlaceholder": "you@example.com",
+      "submit": "Email me a sign-in link",
+      "sending": "Sending…",
+      "sentTitle": "Check your inbox",
+      "sentLead": "We sent a sign-in link to {email}. Open it on this device to continue.",
+      "useAnother": "Use another email",
+      "failed": "The link could not be sent. Wait a minute and try again."
+    },
+    "callbackFailed": "That sign-in link has expired or was already used. Request a new one."
+  },
+  "decks": {
+    "library": {
+      "title": "Your decks",
+      "lead": "Every deck you create here or through your AI assistant.",
+      "cardCount": "{count, plural, =0 {No cards yet} one {# card} other {# cards}}",
+      "emptyTitle": "No decks yet",
+      "emptyLead": "Create your first deck below, or ask your AI assistant to make one.",
+      "loading": "Loading your decks…",
+      "loadFailed": "Your decks could not be loaded."
+    },
+    "create": {
+      "title": "New deck",
+      "titleLabel": "Title",
+      "titlePlaceholder": "Spanish A1 verbs",
+      "languageLabel": "Card language",
+      "descriptionLabel": "Description",
+      "descriptionHint": "Optional. One sentence about what the deck covers.",
+      "submit": "Create deck",
+      "submitting": "Creating…",
+      "failed": "The deck could not be created."
+    },
+    "detail": {
+      "back": "All decks",
+      "loading": "Loading the deck…",
+      "loadFailed": "This deck could not be loaded.",
+      "notFound": "This deck does not exist or was deleted.",
+      "delete": "Delete deck",
+      "confirmDelete": "Delete “{title}”? You can ask for it back within 30 days.",
+      "deleteFailed": "The deck could not be deleted.",
+      "cardsTitle": "Cards",
+      "emptyCards": "No cards yet. Write the first one above, or ask your AI to add some."
+    },
+    "editor": {
+      "title": "Add a card",
+      "hint": "Type the front, press Tab, type the back, press Enter. The next card is ready right away.",
+      "typeLabel": "Card type",
+      "types": {
+        "basic": "Basic, front to back",
+        "reversible": "Reversible, both directions"
+      },
+      "frontLabel": "Front",
+      "backLabel": "Back",
+      "extraLabel": "Extra",
+      "extraHint": "Optional. An example, an explanation or a source.",
+      "submit": "Add card",
+      "submitting": "Adding…",
+      "added": "Card added.",
+      "failed": "The card could not be added.",
+      "previewLabel": "Preview",
+      "previewFront": "Front of the card",
+      "previewBack": "Back of the card"
+    },
+    "card": {
+      "addedBy": "Added by {client}",
+      "reversible": "Reversible",
+      "edit": "Edit",
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "deleteLabel": "Delete card “{front}”",
+      "editLabel": "Edit card “{front}”",
+      "saveFailed": "The card could not be saved.",
+      "deleteFailed": "The card could not be deleted."
+    }
+  },
+  "connectAi": {
+    "title": "Connect your AI",
+    "lead": "Deck Club has an MCP server. Add it to your assistant and it can list your decks, create decks and add cards for you. It uses your own AI subscription, never ours.",
+    "serverUrl": "Server URL",
+    "copy": "Copy",
+    "copied": "Copied",
+    "tokenTitle": "Access token",
+    "tokenLead": "Until one-click sign-in for assistants is ready, your assistant uses a temporary access token. It expires after an hour. Treat it like a password.",
+    "copyToken": "Copy access token",
+    "tokenFailed": "Sign in again to get a new token.",
+    "clientsTitle": "Add the server to your assistant",
+    "claudeCode": "Claude Code",
+    "claudeCodeStep": "Run this in your terminal, with the token in place of TOKEN:",
+    "otherClients": "Claude, ChatGPT and Codex",
+    "otherClientsStep": "Add a custom connector with the server URL above and send the token as a Bearer token in the Authorization header.",
+    "examplesTitle": "Try asking",
+    "examples": {
+      "make": "Make 20 cards from this article and add them to a new deck called Biology.",
+      "list": "Which Deck Club decks do I have?",
+      "add": "Add the five verbs we just practised to my Spanish deck."
+    }
+  },
+  "validation": {
+    "too_small": "Fill in this field.",
+    "too_big": "This is too long.",
+    "invalid_format": "Use a valid format.",
+    "custom": "Use plain text: HTML tags are not allowed.",
+    "invalid": "Check this field."
+  },
+  "errors": {
+    "retry": "Try again",
+    "reference": "Reference: {traceId}",
+    "notFoundTitle": "Page not found",
+    "notFoundLead": "The page you are looking for does not exist.",
+    "home": "Go to your decks"
+  }
+}

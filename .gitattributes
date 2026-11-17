@@ -1,0 +1,16 @@
+# Normalise line endings to LF in the repository regardless of OS, so a
+# checkout on Windows and a checkout on Linux produce identical diffs.
+* text=auto eol=lf
+
+# Windows-only scripts keep CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.mp4 binary

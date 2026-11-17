@@ -1,0 +1,4 @@
+interface:
+  display_name: "Plan"
+  short_description: "Create DAG-ready .plan.md files"
+  default_prompt: "Use $plan to turn the accepted PRD or issue into .codex/plans/*.plan.md files for plan-graph."

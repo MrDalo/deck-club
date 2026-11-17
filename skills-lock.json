@@ -1,0 +1,203 @@
+{
+  "version": 1,
+  "skills": {
+    "ci-commit": {
+      "source": "BleedingDev/training-skills",
+      "sourceType": "github",
+      "skillPath": "skills/ci-commit/SKILL.md",
+      "computedHash": "69688d50bfad4cda27d159428077e3e79edd57163e7c509df68f133ef015cff0"
+    },
+    "codebase-deep-research": {
+      "source": "BleedingDev/training-skills",
+      "sourceType": "github",
+      "skillPath": "skills/codebase-deep-research/SKILL.md",
+      "computedHash": "e0cdc6e2c5c1b226fcd11d8c5a47d58e65c311a340b7c749f2db518afa067258"
+    },
+    "configure-workspaces": {
+      "source": "BleedingDev/training-skills",
+      "sourceType": "github",
+      "skillPath": "skills/configure-workspaces/SKILL.md",
+      "computedHash": "102d364a93761d37785e8b5dd50be56113ecd5c719f2965ca51f062ae70424a7"
+    },
+    "create-design-discussion": {
+      "source": "BleedingDev/training-skills",
+      "sourceType": "github",
+      "skillPath": "skills/create-design-discussion/SKILL.md",
+      "computedHash": "7d93c4f20e92dfc22ab913a27b92a7efebe27689288911e330371224cbb48823"
+    },
+    "create-plan": {
+      "source": "BleedingDev/training-skills",
+      "sourceType": "github",
+      "skillPath": "skills/create-plan/SKILL.md",
+      "computedHash": "c94d7a6931f023f834c954add927afbe8452949bdbfde0989f15be8766d4f5c0"
+    },
+    "create-prd": {
+      "source": "BleedingDev/training-skills",
+      "sourceType": "github",
+      "skillPath": "skills/create-prd/SKILL.md",
+      "computedHash": "a27f2d9b24839cbf39dbdece0ff959bcb48ec0fd515651fe4d9782c291861733"
+    },
+    "create-research": {
+      "source": "BleedingDev/training-skills",
+      "sourceType": "github",
+      "skillPath": "skills/create-research/SKILL.md",
+      "computedHash": "2bacddeb612968ec90acc605c197283dc8af241d3bcc7a3a597d9e6dcfd352b9"
+    },
+    "create-research-questions": {
+      "source": "BleedingDev/training-skills",
+      "sourceType": "github",
+      "skillPath": "skills/create-research-questions/SKILL.md",
+      "computedHash": "3de75e51f859d3fb439b4e82268edf946f528826827912fe7704673b09e203ee"
+    },
+    "create-structure-outline": {
+      "source": "BleedingDev/training-skills",
+      "sourceType": "github",
+      "skillPath": "skills/create-structure-outline/SKILL.md",
+      "computedHash": "090ac11bad7465c1a6cff00d3e0884cf77e7c0500faeb989697304671eea0cf6"
+    },
+    "create-tdd": {
+      "source": "BleedingDev/training-skills",
+      "sourceType": "github",
+      "skillPath": "skills/create-tdd/SKILL.md",
+      "computedHash": "dfd9ee1dbcfec224537934b98d0cb35a5ae66b697e1bcf46aec956d07ae4c052"
+    },
+    "deep-research": {
+      "source": "BleedingDev/training-skills",
+      "sourceType": "github",
+      "skillPath": "skills/deep-research/SKILL.md",
+      "computedHash": "f9de2d030e211d266f2a858b12eb0b9674ec147b48ad93dad14dc133220f682e"
+    },
+    "describe-pr": {
+      "source": "BleedingDev/training-skills",
+      "sourceType": "github",
+      "skillPath": "skills/describe-pr/SKILL.md",
+      "computedHash": "e11cac16bb86d1337085955d3d5e09e6651087a23defe478b6d5b26aa3351d79"
+    },
+    "domain-modeling": {
+      "source": "BleedingDev/training-skills",
+      "sourceType": "github",
+      "skillPath": "skills/domain-modeling/SKILL.md",
+      "computedHash": "65da9ce611a203fc6b9ecf95254cf845857243d958cb0d64df556cad87c76312"
+    },
+    "ecosystem-research": {
+      "source": "BleedingDev/training-skills",
+      "sourceType": "github",
+      "skillPath": "skills/ecosystem-research/SKILL.md",
+      "computedHash": "8756448000a892975dcbdceb0dcfbbc37fca97dca7edb56ff8c07126647e3dfd"
+    },
+    "github-deep-research": {
+      "source": "BleedingDev/training-skills",
+      "sourceType": "github",
+      "skillPath": "skills/github-deep-research/SKILL.md",
+      "computedHash": "601a10151ff65b30f4e1917eeadd9b9f81e4f5535cb609f45e5bd249a678ef1b"
+    },
+    "grill-with-docs": {
+      "source": "BleedingDev/training-skills",
+      "sourceType": "github",
+      "skillPath": "skills/grill-with-docs/SKILL.md",
+      "computedHash": "96718e0a89e48c7d76cc9759c7094a82ff34eb89ddc46a30388063fa9812356f"
+    },
+    "grilling": {
+      "source": "BleedingDev/training-skills",
+      "sourceType": "github",
+      "skillPath": "skills/grilling/SKILL.md",
+      "computedHash": "4eb5bf61b1e602f9cedbd3a5e4469dfba1db0247d5d40956d03299c455b91197"
+    },
+    "implement-outline": {
+      "source": "BleedingDev/training-skills",
+      "sourceType": "github",
+      "skillPath": "skills/implement-outline/SKILL.md",
+      "computedHash": "c15f918f8f4afa82ae36674dfbf73cf366aef1bb5ff7c4e21893d17878614237"
+    },
+    "implement-plan": {
+      "source": "BleedingDev/training-skills",
+      "sourceType": "github",
+      "skillPath": "skills/implement-plan/SKILL.md",
+      "computedHash": "b0ceef7d6769248fda5a00e276a821daf7cd5797c1b3624eeb97a44ff3f36d29"
+    },
+    "iterate-design-discussion": {
+      "source": "BleedingDev/training-skills",
+      "sourceType": "github",
+      "skillPath": "skills/iterate-design-discussion/SKILL.md",
+      "computedHash": "4a35feeaf1926478035591d1b89226fe59bc606cdcad642f530dce77836ded20"
+    },
+    "iterate-implementation": {
+      "source": "BleedingDev/training-skills",
+      "sourceType": "github",
+      "skillPath": "skills/iterate-implementation/SKILL.md",
+      "computedHash": "10a3445e95d607f5377e60d5492f1df891dd10d20fb55ef35aa363e63379ef29"
+    },
+    "iterate-plan": {
+      "source": "BleedingDev/training-skills",
+      "sourceType": "github",
+      "skillPath": "skills/iterate-plan/SKILL.md",
+      "computedHash": "1ea448e86b26765513a7cdfa1eb091887cb06adc6c459481fb248e55ff000630"
+    },
+    "iterate-prd": {
+      "source": "BleedingDev/training-skills",
+      "sourceType": "github",
+      "skillPath": "skills/iterate-prd/SKILL.md",
+      "computedHash": "b2c83b07453c4b952794dcf7375626d22d359c0b94e3379835e8009f5fbeec7c"
+    },
+    "iterate-research": {
+      "source": "BleedingDev/training-skills",
+      "sourceType": "github",
+      "skillPath": "skills/iterate-research/SKILL.md",
+      "computedHash": "7d0faad6b635091c81c43213b1e95ba85aba883a831055b524cf48682a487d2f"
+    },
+    "iterate-research-questions": {
+      "source": "BleedingDev/training-skills",
+      "sourceType": "github",
+      "skillPath": "skills/iterate-research-questions/SKILL.md",
+      "computedHash": "cde145f486a55f6ea09bfb65a010c18c4ef52559dd71dee59673fcee85e78bfc"
+    },
+    "iterate-structure-outline": {
+      "source": "BleedingDev/training-skills",
+      "sourceType": "github",
+      "skillPath": "skills/iterate-structure-outline/SKILL.md",
+      "computedHash": "e82bb399d2f1df48c4b9634f60b218f138445fc51339003da50f922d84634678"
+    },
+    "iterate-tdd": {
+      "source": "BleedingDev/training-skills",
+      "sourceType": "github",
+      "skillPath": "skills/iterate-tdd/SKILL.md",
+      "computedHash": "bbf3db64b0e0ea076f96710841da7c3b429485eb1e73f22f15fb99ecf4e04927"
+    },
+    "plan": {
+      "source": "BleedingDev/training-skills",
+      "sourceType": "github",
+      "skillPath": "skills/plan/SKILL.md",
+      "computedHash": "78faa0f468fe34fd2919cfc19f8d2d85b7232b6a07ecd706c2d34f7c679b27e2"
+    },
+    "plan-graph": {
+      "source": "BleedingDev/training-skills",
+      "sourceType": "github",
+      "skillPath": "skills/plan-graph/SKILL.md",
+      "computedHash": "d1a81b01f174fb7bc95bf5bc08657b457fa81617b1b80027a5feb5ec99c79ef3"
+    },
+    "review-artifact-comments": {
+      "source": "BleedingDev/training-skills",
+      "sourceType": "github",
+      "skillPath": "skills/review-artifact-comments/SKILL.md",
+      "computedHash": "f1b434d88389ae9e3f85bab5290134e84e0f8411fe76f98e158fc69be4b0c24b"
+    },
+    "setup-worktree": {
+      "source": "BleedingDev/training-skills",
+      "sourceType": "github",
+      "skillPath": "skills/setup-worktree/SKILL.md",
+      "computedHash": "4a2bdae3f5db22a21c70a0096a9eace4fed4c2a2acaa4c3ec52709bc04bcb176"
+    },
+    "show-me": {
+      "source": "BleedingDev/training-skills",
+      "sourceType": "github",
+      "skillPath": "skills/show-me/SKILL.md",
+      "computedHash": "98b6875854fde52ea8c9f3ff9dab0c00eef915f3b1db44fb022be787695c51ce"
+    },
+    "wayfinder": {
+      "source": "BleedingDev/training-skills",
+      "sourceType": "github",
+      "skillPath": "skills/wayfinder/SKILL.md",
+      "computedHash": "d6f094c4d06e575818049adf8206670d1412c6a8afd011fe59434d414f9f17ed"
+    }
+  }
+}

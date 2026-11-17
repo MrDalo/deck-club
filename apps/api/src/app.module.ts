@@ -1,0 +1,12 @@
+import { Module } from '@nestjs/common';
+import { AuthModule } from './common/auth/auth.module.js';
+import { ConfigModule } from './config/config.module.js';
+import { DatabaseModule } from './infra/database/database.module.js';
+import { DecksModule } from './modules/decks/decks.module.js';
+import { HealthModule } from './modules/health/health.module.js';
+
+/** The modular monolith: shared infrastructure first, then one import per business module. */
+@Module({
+  imports: [ConfigModule, DatabaseModule, AuthModule, HealthModule, DecksModule],
+})
+export class AppModule {}

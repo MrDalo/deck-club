@@ -1,0 +1,41 @@
+{
+  "name": "deck-club",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0",
+  "description": "Deck Club: a free, open-source flashcard app with spaced repetition, clubs and an MCP server for your own AI assistant",
+  "license": "MIT",
+  "packageManager": "pnpm@10.30.3",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint lint:root",
+    "lint:root": "eslint . --max-warnings 0",
+    "lint:fix": "turbo run lint -- --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "deadcode": "knip",
+    "test": "turbo run test",
+    "db:generate": "turbo run db:generate --filter=@deck-club/api",
+    "db:migrate": "turbo run db:migrate --filter=@deck-club/api",
+    "clean": "turbo run clean && rimraf .turbo",
+    "stack:up": "docker compose --env-file .env up -d --build",
+    "stack:down": "docker compose --env-file .env down",
+    "hooks:test": "node .claude/hooks/test-hooks.mjs"
+  },
+  "devDependencies": {
+    "@deck-club/config": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "knip": "catalog:",
+    "prettier": "catalog:",
+    "rimraf": "catalog:",
+    "turbo": "catalog:",
+    "typescript": "catalog:",
+    "typescript-native": "catalog:"
+  }
+}

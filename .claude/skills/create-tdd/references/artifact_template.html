@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Technical design artifact</title>
+  <!--
+    Preserve this standalone visual system: square geometry, the terminal palette,
+    system-ui prose, IBM Plex Mono chrome, and the utility classes below. Replace
+    only the body example with one focused design concept and domain-realistic labels.
+  -->
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap");
+
+    :root {
+      color-scheme: dark;
+      --surface: #1b1e28;
+      --surface-deep: #171922;
+      --surface-raised: #303340;
+      --line: #303340;
+      --text: #a6accd;
+      --text-strong: #ffffff;
+      --text-muted: rgb(166 172 205 / 55%);
+      --accent: #add7ff;
+      --accent-soft: rgb(173 215 255 / 30%);
+      --mint: #5de4c7;
+      --cyan: #89ddff;
+      --rose: #d0679d;
+      --pink: #f087bd;
+      --mono: "IBM Plex Mono", Consolas, Monaco, "Courier New", monospace;
+      --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      border-radius: 0;
+    }
+
+    ::selection {
+      background: rgb(113 124 180 / 25%);
+    }
+
+    html {
+      background: var(--surface);
+      scrollbar-color: var(--line) transparent;
+    }
+
+    body {
+      min-width: 280px;
+      margin: 0;
+      padding: 26px 22px 120px;
+      background: var(--surface);
+      color: var(--text);
+      font: 300 15px/1.7 var(--sans);
+      letter-spacing: 0.03em;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .wrap {
+      width: min(100%, 1120px);
+      margin-inline: auto;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4 {
+      margin: 1.6em 0 0.5em;
+      color: var(--accent);
+      font-weight: 600;
+      line-height: 1.3;
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: 24px;
+      letter-spacing: -0.02em;
+    }
+
+    h2 {
+      font-size: 19px;
+      letter-spacing: -0.02em;
+    }
+
+    h3 {
+      font-size: 16px;
+      letter-spacing: -0.01em;
+    }
+
+    h4 {
+      color: var(--text-muted);
+      font: 600 13px/1.3 var(--mono);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    p,
+    ul,
+    ol {
+      max-width: 84ch;
+    }
+
+    p {
+      margin: 0 0 1em;
+      line-height: 1.9;
+    }
+
+    ul,
+    ol {
+      margin: 0.5em 0 1em;
+      padding-left: 1.6em;
+    }
+
+    li {
+      line-height: 1.8;
+    }
+
+    li + li {
+      margin-top: 0.35em;
+    }
+
+    li::marker {
+      color: var(--text-muted);
+    }
+
+    strong {
+      color: var(--text-strong);
+      font-weight: 600;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration-thickness: 1px;
+      text-underline-offset: 2px;
+    }
+
+    a:hover {
+      color: var(--cyan);
+    }
+
+    hr {
+      margin: 2em 0;
+      border: 0;
+      border-top: 1px solid var(--line);
+    }
+
+    code,
+    pre {
+      font-family: var(--mono);
+      letter-spacing: normal;
+    }
+
+    code {
+      padding: 0.1em 0.35em 0;
+      background: var(--surface-raised);
+      font-size: 0.875em;
+    }
+
+    pre {
+      margin: 0.8em 0;
+      padding: 12px 14px;
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      background: var(--surface-deep);
+      color: var(--text);
+      font-size: 12.5px;
+      line-height: 1.7;
+      tab-size: 2;
+      white-space: pre;
+    }
+
+    pre code {
+      padding: 0;
+      background: transparent;
+      font-size: inherit;
+    }
+
+    pre .keyword { color: var(--mint); }
+    pre .string { color: var(--cyan); }
+    pre .comment { color: var(--text-muted); font-style: italic; }
+    pre .function { color: var(--accent); }
+
+    blockquote {
+      margin: 1em 0;
+      padding: 2px 0 2px 16px;
+      border-left: 2px solid var(--accent-soft);
+      color: var(--text-muted);
+    }
+
+    table {
+      width: 100%;
+      margin: 1em 0;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th,
+    td {
+      padding: 7px 12px;
+      border: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--text-muted);
+      font: 600 10.5px/1.4 var(--mono);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .card {
+      margin: 1em 0;
+      padding: 20px 24px;
+      border: 1px solid var(--line);
+      background: var(--surface-deep);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border: 1px solid currentColor;
+      font: 600 9px/1.4 var(--mono);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .badge-accent { color: var(--accent); background: rgb(173 215 255 / 10%); }
+    .badge-new { color: var(--mint); background: rgb(93 228 199 / 10%); }
+    .badge-modified { color: var(--cyan); background: rgb(137 221 255 / 10%); }
+    .badge-note { color: var(--rose); background: rgb(208 103 157 / 10%); }
+    .badge-principle { color: var(--pink); background: rgb(240 135 189 / 10%); }
+    .badge-kept { color: var(--text); background: rgb(166 172 205 / 8%); }
+    .badge-removed { border-color: var(--rose); background: var(--rose); color: var(--surface); }
+
+    .stat-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 18px 0;
+    }
+
+    .stat {
+      padding: 8px 14px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text-muted);
+      font: 400 9.5px/1.6 var(--mono);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .stat-value {
+      display: block;
+      margin-bottom: 2px;
+      color: var(--accent);
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+
+    .stat-value.ok {
+      color: var(--mint);
+    }
+
+    .ba {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 10px;
+      margin: 0.8em 0;
+    }
+
+    .ba-label {
+      margin-bottom: 4px;
+      font: 600 9.5px/1.4 var(--mono);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .before .ba-label { color: var(--rose); }
+    .after .ba-label { color: var(--mint); }
+    .before pre { margin: 0; border-color: rgb(208 103 157 / 35%); }
+    .after pre { margin: 0; border-color: rgb(93 228 199 / 35%); }
+
+    @media (max-width: 900px) {
+      .ba {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <!--
+      Replace this example with one focused concept. The utilities are optional;
+      use semantic headings, prose, lists, tables, and preformatted diagrams first.
+    -->
+    <h1>Artifact title</h1>
+    <p>One sentence stating the design decision this artifact makes easier to understand.</p>
+  </div>
+</body>
+</html>

@@ -1,0 +1,51 @@
+{
+  "name": "@deck-club/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Next.js web app: the person-facing client of the core API. Structure: docs/frontend-structure.md",
+  "scripts": {
+    "dev": "node ../../scripts/with-root-env.mjs next dev --port 3000",
+    "build": "next build",
+    "start": "next start --port 3000",
+    "typecheck": "node ../../node_modules/typescript-native/bin/tsc --noEmit -p tsconfig.json",
+    "lint": "eslint . --max-warnings 0",
+    "test": "vitest run && vitest run --config vitest.dom.config.ts",
+    "clean": "rimraf .next"
+  },
+  "dependencies": {
+    "@deck-club/contracts": "workspace:*",
+    "@hookform/resolvers": "catalog:",
+    "@supabase/ssr": "catalog:",
+    "@supabase/supabase-js": "catalog:",
+    "@tanstack/react-query": "catalog:",
+    "class-variance-authority": "catalog:",
+    "clsx": "catalog:",
+    "next": "catalog:",
+    "next-intl": "catalog:",
+    "radix-ui": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-hook-form": "catalog:",
+    "tailwind-merge": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@deck-club/config": "workspace:*",
+    "@tailwindcss/postcss": "catalog:",
+    "@testing-library/dom": "catalog:",
+    "@testing-library/jest-dom": "catalog:",
+    "@testing-library/react": "catalog:",
+    "@testing-library/user-event": "catalog:",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "eslint": "catalog:",
+    "jsdom": "catalog:",
+    "postcss": "catalog:",
+    "rimraf": "catalog:",
+    "tailwindcss": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Deep Research"
+  short_description: "Systematic multi-source web research"
+  default_prompt: "Use $deep-research to research this topic broadly, then drill down with targeted searches and source-backed findings."
