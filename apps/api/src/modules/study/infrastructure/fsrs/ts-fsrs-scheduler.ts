@@ -1,17 +1,18 @@
 import { RATINGS, type Rating, STUDY_STATES, type StudyStateName } from '@deck-club/contracts';
-import { DefaultScheduler, Rating as FsrsRating } from 'ts-fsrs';
+import {
+  type Card as FsrsCard,
+  createEmptyCard,
+  fsrs,
+  type FSRS,
+  generatorParameters,
+  type Grade,
+  Rating as FsrsRating,
+  type State,
+} from 'ts-fsrs';
 import type { ReviewScheduler, ScheduleRequest } from '../../application/ports/review-scheduler.js';
 import type { SchedulingMemory } from '../../domain/study-state.js';
 
-type FsrsScheduler = Awaited<ReturnType<typeof DefaultScheduler>>;
-/** The card `review()` accepts (FSRS-7 shape, including `stabilityFast`). */
-type FsrsCard = Extract<Parameters<FsrsScheduler['review']>[0]['card'], { stabilityFast: number }>;
-/** A card the scheduler returns; `newCard()` types omit `stabilityFast`, which starts at 0. */
-type FsrsOutputCard =
-  ReturnType<FsrsScheduler['review']>['card'] | ReturnType<FsrsScheduler['newCard']>;
-type FsrsGrade = (typeof FsrsRating)['Again' | 'Hard' | 'Good' | 'Easy'];
-
-const GRADE_OF: Record<Rating, FsrsGrade> = {
+const GRADE_OF: Record<Rating, Grade> = {
   again: FsrsRating.Again,
   hard: FsrsRating.Hard,
   good: FsrsRating.Good,
@@ -19,78 +20,73 @@ const GRADE_OF: Record<Rating, FsrsGrade> = {
 };
 
 /** ts-fsrs numbers states 0–3 in the same order as STUDY_STATES. */
-const stateName = (state: number): StudyStateName => STUDY_STATES[state] ?? 'new';
+const stateName = (state: State): StudyStateName => STUDY_STATES[state] ?? 'new';
 
-const SCHEDULE_STATUS: Record<StudyStateName, FsrsCard['scheduleStatus']> = {
-  new: 'new',
-  learning: 'learning',
-  relearning: 'learning',
-  review: 'review',
-};
-
-function toFsrsCard(memory: SchedulingMemory, scheduleId: string): FsrsCard {
+function toFsrsCard(memory: SchedulingMemory): FsrsCard {
   return {
-    cardId: scheduleId,
-    state: STUDY_STATES.indexOf(memory.state) as FsrsCard['state'],
-    scheduleStatus: SCHEDULE_STATUS[memory.state],
+    due: memory.dueAt,
     stability: memory.stability,
-    stabilityFast: memory.stabilityFast,
     difficulty: memory.difficulty,
-    dueAt: memory.dueAt,
-    lastReviewAt: memory.lastReviewAt,
+    // Deprecated in ts-fsrs 5: the scheduler derives elapsed time from `last_review`.
+    elapsed_days: 0,
+    scheduled_days: memory.scheduledDays,
+    learning_steps: memory.learningStep,
     reps: memory.reps,
     lapses: memory.lapses,
-    scheduledDays: memory.scheduledDays,
-    learningStep: memory.learningStep,
+    state: STUDY_STATES.indexOf(memory.state),
+    ...(memory.lastReviewAt !== null && { last_review: memory.lastReviewAt }),
   };
 }
 
-function toMemory(card: FsrsOutputCard): SchedulingMemory {
+function toMemory(card: FsrsCard): SchedulingMemory {
   return {
     state: stateName(card.state),
     stability: card.stability,
-    stabilityFast: 'stabilityFast' in card ? card.stabilityFast : 0,
+    // FSRS-7 only; FSRS-6 has a single stability. Kept so moving to FSRS-7 needs no migration.
+    stabilityFast: 0,
     difficulty: card.difficulty,
-    dueAt: card.dueAt,
-    lastReviewAt: card.lastReviewAt,
+    dueAt: card.due,
+    lastReviewAt: card.last_review ?? null,
     reps: card.reps,
     lapses: card.lapses,
-    scheduledDays: card.scheduledDays,
-    learningStep: card.learningStep,
+    scheduledDays: card.scheduled_days,
+    learningStep: card.learning_steps,
   };
 }
 
-/** Adapter: {@link ReviewScheduler} on ts-fsrs's DefaultScheduler (FSRS-7, ADR 0007). */
+/** Adapter: {@link ReviewScheduler} on ts-fsrs 5 (FSRS-6, ADR 0007). */
 export class TsFsrsScheduler implements ReviewScheduler {
-  private constructor(private readonly scheduler: FsrsScheduler) {}
+  private constructor(private readonly scheduler: FSRS) {}
 
   /**
-   * Builds the scheduler once at boot (its setup is asynchronous).
+   * Builds the scheduler.
    * @param desiredRetention - target recall probability, 0.80–0.97 (spec 6)
    * @returns a ready scheduler
    */
-  static async create(desiredRetention: number): Promise<TsFsrsScheduler> {
+  static create(desiredRetention: number): TsFsrsScheduler {
     // Fuzz off: the interval shown on the rating button must be the interval the review gets.
-    return new TsFsrsScheduler(await DefaultScheduler({ desiredRetention, enableFuzz: false }));
+    const parameters = generatorParameters({
+      request_retention: desiredRetention,
+      enable_fuzz: false,
+    });
+    return new TsFsrsScheduler(fsrs(parameters));
   }
 
   initialMemory(now: Date): SchedulingMemory {
-    return toMemory(this.scheduler.newCard({ now }));
+    return toMemory(createEmptyCard(now));
   }
 
   preview(request: ScheduleRequest): Record<Rating, SchedulingMemory> {
-    const card = toFsrsCard(request.memory, request.scheduleId);
+    const card = toFsrsCard(request.memory);
     const entries = RATINGS.map((rating) => {
-      const outcome = this.scheduler.review({ card, grade: GRADE_OF[rating], now: request.now });
+      const outcome = this.scheduler.next(card, request.now, GRADE_OF[rating]);
       return [rating, toMemory(outcome.card)] as const;
     });
     return Object.fromEntries(entries) as Record<Rating, SchedulingMemory>;
   }
 
   review(request: ScheduleRequest, rating: Rating): SchedulingMemory {
-    const card = toFsrsCard(request.memory, request.scheduleId);
-    return toMemory(
-      this.scheduler.review({ card, grade: GRADE_OF[rating], now: request.now }).card,
-    );
+    const card = toFsrsCard(request.memory);
+    return toMemory(this.scheduler.next(card, request.now, GRADE_OF[rating]).card);
   }
 }

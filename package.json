@@ -7,7 +7,7 @@
   "license": "MIT",
   "packageManager": "pnpm@10.30.3",
   "engines": {
-    "node": ">=24.0.0"
+    "node": ">=22.12.0"
   },
   "scripts": {
     "dev": "turbo run dev",
@@ -25,7 +25,8 @@
     "clean": "turbo run clean && rimraf .turbo",
     "stack:up": "docker compose --env-file .env up -d --build",
     "stack:down": "docker compose --env-file .env down",
-    "hooks:test": "node .claude/hooks/test-hooks.mjs"
+    "hooks:test": "node .claude/hooks/test-hooks.mjs",
+    "pack:alignerr": "bash scripts/pack-for-alignerr.sh"
   },
   "devDependencies": {
     "@deck-club/config": "workspace:*",

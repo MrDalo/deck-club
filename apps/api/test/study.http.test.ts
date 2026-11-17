@@ -63,7 +63,7 @@ describe('study over HTTP, on real SQLite', () => {
       method: 'POST',
       url: '/study/reviews',
       headers: { ...signedInAs('ana'), [CLIENT_NAME_HEADER]: 'Claude' },
-      payload: { deckId: deck.id, cardId: card!.cardId, rating: 'good' },
+      payload: { deckId: deck.id, cardId: card!.cardId, rating: 'easy' },
     });
     expect(reviewed.statusCode).toBe(201);
     expect(reviewed.json<ReviewResult>().state).toBe('review');

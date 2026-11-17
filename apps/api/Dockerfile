@@ -6,7 +6,7 @@
 # Runtime secrets come from the environment at run time, never from a build
 # argument or an image layer (.dockerignore drops .env).
 
-ARG NODE_VERSION=24
+ARG NODE_VERSION=22
 
 FROM node:${NODE_VERSION}-bookworm-slim AS base
 ENV PNPM_HOME=/pnpm \

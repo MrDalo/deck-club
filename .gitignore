@@ -47,3 +47,6 @@ npm-debug.log*
 
 # local test-runner reports
 .vitest/
+
+# personal terms for scripts/pack-for-alignerr.sh (never committed)
+.pack-denylist

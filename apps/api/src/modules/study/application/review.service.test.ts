@@ -6,15 +6,15 @@ const CLAUDE = { source: 'mcp', clientName: 'Claude' } as const;
 const HOUR = 60 * 60 * 1000;
 
 describe('ReviewService.submit', () => {
-  it('schedules a new card rated good into the future and logs the review', async () => {
-    const kit = await createStudyTestKit();
+  it('schedules a new card rated easy days ahead and logs the review', async () => {
+    const kit = createStudyTestKit();
     const deck = await kit.seedDeck('ana', [{ front: 'hablar', back: 'to speak' }]);
     const { cards } = await kit.queue.getDueCards('ana', { limit: 10 });
     const card = cards[0]!;
 
     const result = await kit.reviews.submit({
       userId: 'ana',
-      command: { deckId: deck.id, cardId: card.cardId, direction: 'forward', rating: 'good' },
+      command: { deckId: deck.id, cardId: card.cardId, direction: 'forward', rating: 'easy' },
       provenance: APP,
     });
 
@@ -27,7 +27,7 @@ describe('ReviewService.submit', () => {
   });
 
   it('records the AI client as the review source', async () => {
-    const kit = await createStudyTestKit();
+    const kit = createStudyTestKit();
     const deck = await kit.seedDeck('ana', [{}]);
     const [card] = (await kit.queue.getDueCards('ana', { limit: 1 })).cards;
 
@@ -45,7 +45,7 @@ describe('ReviewService.submit', () => {
   });
 
   it('rejects reviewing another user’s card with DECK_NOT_FOUND', async () => {
-    const kit = await createStudyTestKit();
+    const kit = createStudyTestKit();
     const deck = await kit.seedDeck('ana', [{}]);
     const [card] = (await kit.queue.getDueCards('ana', { limit: 1 })).cards;
 
@@ -59,7 +59,7 @@ describe('ReviewService.submit', () => {
   });
 
   it('rejects the reverse direction of a basic card with DIRECTION_NOT_STUDIED', async () => {
-    const kit = await createStudyTestKit();
+    const kit = createStudyTestKit();
     const deck = await kit.seedDeck('ana', [{ type: 'basic' }]);
     const [card] = (await kit.queue.getDueCards('ana', { limit: 1 })).cards;
 
@@ -73,7 +73,7 @@ describe('ReviewService.submit', () => {
   });
 
   it('rejects a card id that is not in the deck with CARD_NOT_FOUND', async () => {
-    const kit = await createStudyTestKit();
+    const kit = createStudyTestKit();
     const deck = await kit.seedDeck('ana', [{}]);
 
     await expect(
@@ -93,7 +93,7 @@ describe('ReviewService.submit', () => {
 
 describe('ReviewService.undoLast', () => {
   it('restores the exact previous schedule, so the card is due again', async () => {
-    const kit = await createStudyTestKit();
+    const kit = createStudyTestKit();
     const deck = await kit.seedDeck('ana', [{}]);
     const [card] = (await kit.queue.getDueCards('ana', { limit: 1 })).cards;
     await kit.reviews.submit({
@@ -111,13 +111,13 @@ describe('ReviewService.undoLast', () => {
   });
 
   it('rejects undo with nothing reviewed today with NOTHING_TO_UNDO', async () => {
-    const kit = await createStudyTestKit();
+    const kit = createStudyTestKit();
 
     await expect(kit.reviews.undoLast('ana')).rejects.toMatchObject({ code: 'NOTHING_TO_UNDO' });
   });
 
   it('rejects undoing a review from a previous day with NOTHING_TO_UNDO', async () => {
-    const kit = await createStudyTestKit();
+    const kit = createStudyTestKit();
     const deck = await kit.seedDeck('ana', [{}]);
     const [card] = (await kit.queue.getDueCards('ana', { limit: 1 })).cards;
     await kit.reviews.submit({

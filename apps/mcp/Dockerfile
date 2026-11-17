@@ -4,7 +4,7 @@
 # data and no secrets. It reaches the api over the private network.
 #   docker build -f apps/mcp/Dockerfile -t deck-club-mcp .
 
-ARG NODE_VERSION=24
+ARG NODE_VERSION=22
 
 FROM node:${NODE_VERSION}-bookworm-slim AS base
 ENV PNPM_HOME=/pnpm \

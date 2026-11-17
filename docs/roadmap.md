@@ -6,7 +6,7 @@ Phases come from spec 12. Each phase ships as vertical slices
 <!-- status:start -->
 
 Phase 0 (foundation) done: monorepo, CI, Docker, Claude setup, decks + cards CRUD in API, web and MCP.
-Study API done (FSRS-7, reviews, undo, Today, stats). Next: study MCP tools (Dalibor) and the web Today + review session.
+Study API done (FSRS-6 via ts-fsrs 5, reviews, undo, Today, stats). Next: study MCP tools and the web Today + review session.
 <!-- status:end -->
 
 ## Phase 0 — Foundation ✅
@@ -21,8 +21,8 @@ Study API done (FSRS-7, reviews, undo, Today, stats). Next: study MCP tools (Dal
 
 ## Phase 1 — MVP: solo learning plus MCP
 
-- [x] **Study slice, API**: `study` module (FSRS-7 via `ts-fsrs`, ADR 0007; study states, append-only reviews, daily limits, day boundary, siblings, undo, streak, retention) with `GET /study/today`, `GET /study/due`, `POST /study/reviews`, `POST /study/reviews/undo`, `GET /study/stats`
-- [ ] **Study slice, MCP** (owner: Dalibor): `get_due_cards`, `submit_review`, `get_stats` in `apps/mcp` over the study endpoints above
+- [x] **Study slice, API**: `study` module (FSRS-6 via `ts-fsrs` 5, ADR 0007; study states, append-only reviews, daily limits, day boundary, siblings, undo, streak, retention) with `GET /study/today`, `GET /study/due`, `POST /study/reviews`, `POST /study/reviews/undo`, `GET /study/stats`
+- [ ] **Study slice, MCP**: `get_due_cards`, `submit_review`, `get_stats` in `apps/mcp` over the study endpoints above
 - [ ] **Study slice, web**: Today dashboard, review session (Space, 1–4, interval hints, undo), session summary
 - [ ] **MCP OAuth 2.1**: protected-resource metadata, Supabase as authorization server, scopes, AI connections in Settings (list, revoke); replaces the pasted token
 - [ ] `search_cards`, `update_card`; duplicate detection and `idempotencyKey` on `add_cards`; per-user rate limits (60 calls/min, 2,000 cards/day)

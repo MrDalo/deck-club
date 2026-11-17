@@ -14,20 +14,18 @@ const APP = { source: 'app', clientName: null } as const;
  * scheduler (pure computation) and one advanceable clock shared by both
  * modules, so "tomorrow" means the same thing everywhere.
  */
-export async function createStudyTestKit(): Promise<
-  ReturnType<typeof createDecksTestKit> & {
-    study: InMemoryStudyRepository;
-    queue: StudyQueueService;
-    reviews: ReviewService;
-    stats: StudyStatsService;
-    /** Creates a deck owned by `userId` with the given cards. */
-    seedDeck: (userId: string, cards: Partial<CreateCardCommand>[]) => Promise<Deck>;
-  }
-> {
+export function createStudyTestKit(): ReturnType<typeof createDecksTestKit> & {
+  study: InMemoryStudyRepository;
+  queue: StudyQueueService;
+  reviews: ReviewService;
+  stats: StudyStatsService;
+  /** Creates a deck owned by `userId` with the given cards. */
+  seedDeck: (userId: string, cards: Partial<CreateCardCommand>[]) => Promise<Deck>;
+} {
   const decksKit = createDecksTestKit();
   const facade = new DecksFacade(decksKit.deckService, decksKit.cardService);
   const study = new InMemoryStudyRepository();
-  const scheduler = await TsFsrsScheduler.create(0.9);
+  const scheduler = TsFsrsScheduler.create(0.9);
   let reviewIdCounter = 0;
   const reviewIds = {
     next: () => `00000000-0000-4000-9000-${String((reviewIdCounter += 1)).padStart(12, '0')}`,

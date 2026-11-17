@@ -6,7 +6,7 @@ const DAY = 24 * 60 * 60 * 1000;
 
 describe('StudyQueueService.getDueCards', () => {
   it('returns new cards oriented front to back with a next-due hint per rating', async () => {
-    const kit = await createStudyTestKit();
+    const kit = createStudyTestKit();
     await kit.seedDeck('ana', [{ front: 'hablar', back: 'to speak' }]);
 
     const { cards, totalDue } = await kit.queue.getDueCards('ana', { limit: 10 });
@@ -22,13 +22,13 @@ describe('StudyQueueService.getDueCards', () => {
     expect(new Date(hints.again).getTime()).toBeLessThan(new Date(hints.easy).getTime());
   });
 
-  it('shows a card rated good again once it is due, not before', async () => {
-    const kit = await createStudyTestKit();
+  it('shows a card rated easy again once it is due, not before', async () => {
+    const kit = createStudyTestKit();
     const deck = await kit.seedDeck('ana', [{}]);
     const [card] = (await kit.queue.getDueCards('ana', { limit: 1 })).cards;
     const result = await kit.reviews.submit({
       userId: 'ana',
-      command: { deckId: deck.id, cardId: card!.cardId, direction: 'forward', rating: 'good' },
+      command: { deckId: deck.id, cardId: card!.cardId, direction: 'forward', rating: 'easy' },
       provenance: APP,
     });
 
@@ -39,7 +39,7 @@ describe('StudyQueueService.getDueCards', () => {
   });
 
   it('asks a reversible card back to front on another day', async () => {
-    const kit = await createStudyTestKit();
+    const kit = createStudyTestKit();
     const deck = await kit.seedDeck('ana', [{ type: 'reversible', front: 'gato', back: 'cat' }]);
     const [forward] = (await kit.queue.getDueCards('ana', { limit: 5 })).cards;
     await kit.reviews.submit({
@@ -56,7 +56,7 @@ describe('StudyQueueService.getDueCards', () => {
   });
 
   it('limits the page but reports everything that is due', async () => {
-    const kit = await createStudyTestKit();
+    const kit = createStudyTestKit();
     await kit.seedDeck('ana', [{}, {}, {}]);
 
     const page = await kit.queue.getDueCards('ana', { limit: 2 });
@@ -66,7 +66,7 @@ describe('StudyQueueService.getDueCards', () => {
   });
 
   it('rejects a deck the user does not own with DECK_NOT_FOUND', async () => {
-    const kit = await createStudyTestKit();
+    const kit = createStudyTestKit();
     const deck = await kit.seedDeck('ana', [{}]);
 
     await expect(kit.queue.getDueCards('ben', { deckId: deck.id, limit: 5 })).rejects.toMatchObject(
@@ -79,7 +79,7 @@ describe('StudyQueueService.getDueCards', () => {
 
 describe('StudyQueueService.getToday', () => {
   it('counts new cards and due reviews per deck and in total', async () => {
-    const kit = await createStudyTestKit();
+    const kit = createStudyTestKit();
     const deck = await kit.seedDeck('ana', [{}, {}]);
 
     const today = await kit.queue.getToday('ana');
@@ -92,7 +92,7 @@ describe('StudyQueueService.getToday', () => {
   });
 
   it('starts a streak with the first review of the day', async () => {
-    const kit = await createStudyTestKit();
+    const kit = createStudyTestKit();
     const deck = await kit.seedDeck('ana', [{}]);
     const [card] = (await kit.queue.getDueCards('ana', { limit: 1 })).cards;
     await kit.reviews.submit({

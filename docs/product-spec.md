@@ -1,6 +1,6 @@
 # Deck Club: Product Specification
 
-Nov 17, 2026 · Dalibor
+Nov 17, 2026
 
 > Source of truth for what the product does (rule `00-core`). Tech stack and
 > branding are recorded separately: `docs/architecture.md`, `docs/adr/`,

@@ -5,7 +5,7 @@ const APP = { source: 'app', clientName: null } as const;
 
 describe('StudyStatsService.getStats', () => {
   it('reports zeros and no retention before any review', async () => {
-    const kit = await createStudyTestKit();
+    const kit = createStudyTestKit();
 
     expect(await kit.stats.getStats('ana')).toEqual({
       streakDays: 0,
@@ -16,7 +16,7 @@ describe('StudyStatsService.getStats', () => {
   });
 
   it('counts today’s reviews, ignores undone ones, and keeps other users apart', async () => {
-    const kit = await createStudyTestKit();
+    const kit = createStudyTestKit();
     const deck = await kit.seedDeck('ana', [{}, {}]);
     const cards = (await kit.queue.getDueCards('ana', { limit: 5 })).cards;
     for (const card of cards) {

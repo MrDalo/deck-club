@@ -8,7 +8,7 @@
 #     --build-arg NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<publishable key> \
 #     --build-arg NEXT_PUBLIC_MCP_URL=http://localhost:4100/mcp -t deck-club-web .
 
-ARG NODE_VERSION=24
+ARG NODE_VERSION=22
 
 FROM node:${NODE_VERSION}-bookworm-slim AS base
 ENV PNPM_HOME=/pnpm \
