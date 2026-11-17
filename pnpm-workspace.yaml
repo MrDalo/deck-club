@@ -23,7 +23,7 @@ catalog:
   eslint: ^10.13.0
   '@eslint/js': ^10.0.1
   typescript-eslint: ^8.72.0
-  eslint-plugin-boundaries: ^7.3.0
+  eslint-plugin-boundaries: ^7.4.0
   eslint-import-resolver-typescript: ^4.4.5
   eslint-config-prettier: ^10.1.8
   eslint-plugin-react-hooks: ^7.1.1
@@ -60,7 +60,7 @@ catalog:
   # web
   # 16.4.5 is the security release (7 advisories, incl. GHSA-pc58-hwjq-p385 on
   # forwarded fetch responses, which /api/v1 does). Pinned; see the age exclusions below.
-  next: 16.4.5
+  next: 16.4.6
   react: ^19.3.1
   react-dom: ^19.3.1
   '@types/react': ^19.3.0
