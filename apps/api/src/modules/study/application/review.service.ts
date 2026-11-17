@@ -28,7 +28,7 @@ export type ReviewRequest = {
 @Injectable()
 export class ReviewService {
   constructor(
-    private readonly decks: DecksFacade,
+    @Inject(DecksFacade) private readonly decks: DecksFacade,
     @Inject(STUDY_REPOSITORY) private readonly study: StudyRepository,
     @Inject(REVIEW_SCHEDULER) private readonly scheduler: ReviewScheduler,
     @Inject(TIME_AND_IDS) private readonly runtime: TimeAndIds,

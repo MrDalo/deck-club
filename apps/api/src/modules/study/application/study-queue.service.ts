@@ -22,7 +22,7 @@ const STREAK_LOOKBACK_DAYS = 366;
 @Injectable()
 export class StudyQueueService {
   constructor(
-    private readonly decks: DecksFacade,
+    @Inject(DecksFacade) private readonly decks: DecksFacade,
     @Inject(STUDY_REPOSITORY) private readonly study: StudyRepository,
     @Inject(REVIEW_SCHEDULER) private readonly scheduler: ReviewScheduler,
     @Inject(CLOCK) private readonly clock: Clock,

@@ -1,4 +1,4 @@
-import { Controller, Delete, Get, HttpCode, Post, Req, Res } from '@nestjs/common';
+import { Controller, Delete, Get, HttpCode, Inject, Post, Req, Res } from '@nestjs/common';
 import { parseBearerToken } from '@deck-club/contracts';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import type { FastifyReply, FastifyRequest } from 'fastify';
@@ -33,8 +33,8 @@ function handshakeClientName(body: unknown): string | undefined {
 @Controller('mcp')
 export class McpController {
   constructor(
-    private readonly tools: DeckToolsService,
-    private readonly clientNames: ClientNameRegistry,
+    @Inject(DeckToolsService) private readonly tools: DeckToolsService,
+    @Inject(ClientNameRegistry) private readonly clientNames: ClientNameRegistry,
   ) {}
 
   @Post()

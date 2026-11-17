@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Headers, HttpCode, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Headers,
+  HttpCode,
+  Inject,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import {
   type DueCards,
   DueCardsQuerySchema,
@@ -24,9 +34,9 @@ type RequestHeaders = Record<string, string | string[] | undefined>;
 @UseGuards(AuthGuard)
 export class StudyController {
   constructor(
-    private readonly queue: StudyQueueService,
-    private readonly reviews: ReviewService,
-    private readonly stats: StudyStatsService,
+    @Inject(StudyQueueService) private readonly queue: StudyQueueService,
+    @Inject(ReviewService) private readonly reviews: ReviewService,
+    @Inject(StudyStatsService) private readonly stats: StudyStatsService,
   ) {}
 
   @Get('today')

@@ -43,6 +43,11 @@ module.
   `application/ports/`. Every port has a production adapter and an in-memory
   adapter. `Clock` and `IdGenerator` are ports; never `new Date()` or
   `randomUUID()` in a use case.
+- **Inject explicitly.** Every constructor parameter of a Nest class names
+  its token: `@Inject(DeckService)`, `@Inject(STUDY_REPOSITORY)`. `pnpm dev`
+  runs through tsx (esbuild), which emits no decorator type metadata, so a
+  parameter injected by type alone is `undefined` there while tests (swc) and
+  builds (tsc) pass. ESLint enforces it.
 - **Facades** expose async methods returning contract DTOs, never entities or
   rows. A facade with a rule in it has become a second domain layer.
 - Not every module needs ports: a pure CRUD module with no rules may be

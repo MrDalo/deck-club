@@ -1,6 +1,6 @@
 import boundaries from 'eslint-plugin-boundaries';
 import { defineConfig } from 'eslint/config';
-import base from './base.js';
+import base, { BASE_RESTRICTED_SYNTAX } from './base.js';
 
 /**
  * NestJS apps (api, mcp): a modular monolith of hexagonal modules (rule
@@ -13,6 +13,19 @@ import base from './base.js';
  * target's via a template, negated to mean "a different module".
  */
 const INTERNAL_LAYERS = ['domain', 'application', 'infrastructure'];
+
+/**
+ * Every constructor parameter of a Nest-managed (decorated) class names its
+ * token with @Inject(...). Dev runs through tsx (esbuild), which emits no
+ * decorator type metadata, so a parameter injected by its type alone is
+ * silently `undefined` there while tests (swc) and builds (tsc) pass.
+ */
+const INJECT_REQUIRED = {
+  selector:
+    "ClassDeclaration[decorators.length>0] MethodDefinition[kind='constructor'] > FunctionExpression > :matches(TSParameterProperty, Identifier):not([decorators.length>0])",
+  message:
+    'Inject explicitly: @Inject(ServiceClass) or @Inject(TOKEN). tsx (pnpm dev) emits no type metadata, so type-only injection is undefined at runtime (rule 20-backend).',
+};
 
 const sameModuleOnly = (fromType) => ({
   from: { element: { type: fromType } },
@@ -56,6 +69,7 @@ export default defineConfig(...base, {
     ],
   },
   rules: {
+    'no-restricted-syntax': ['error', ...BASE_RESTRICTED_SYNTAX, INJECT_REQUIRED],
     'boundaries/dependencies': [
       'error',
       {

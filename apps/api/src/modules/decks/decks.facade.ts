@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import type { Card, Deck } from '@deck-club/contracts';
 import { CardService } from './application/card.service.js';
 import { DeckService } from './application/deck.service.js';
@@ -17,8 +17,8 @@ export type DeckWithCards = {
 @Injectable()
 export class DecksFacade {
   constructor(
-    private readonly deckService: DeckService,
-    private readonly cardService: CardService,
+    @Inject(DeckService) private readonly deckService: DeckService,
+    @Inject(CardService) private readonly cardService: CardService,
   ) {}
 
   /** The deck when the user may manage it; throws DECK_NOT_FOUND otherwise. */

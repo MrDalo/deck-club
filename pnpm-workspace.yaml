@@ -58,7 +58,9 @@ catalog:
   # scheduling (spec 6, ADR 0007). 5.x because 6.x requires Node 24 and we support Node 22
   ts-fsrs: ^5.4.2
   # web
-  next: ^16.4.3
+  # 16.4.5 is the security release (7 advisories, incl. GHSA-pc58-hwjq-p385 on
+  # forwarded fetch responses, which /api/v1 does). Pinned; see the age exclusions below.
+  next: 16.4.5
   react: ^19.3.1
   react-dom: ^19.3.1
   '@types/react': ^19.3.0
@@ -82,6 +84,21 @@ catalog:
 # then, and offline mirrors (CI caches, sandboxed build machines) that lag
 # behind the registry by two weeks still have every pinned version.
 minimumReleaseAge: 30240
+
+# Security patches are installed as soon as they ship, not after 21 days.
+# Each entry names the advisory it closes; remove it once the pin is older
+# than the window above.
+minimumReleaseAgeExclude:
+  - next # GHSA-mfr8-8qww-v76h and six more, fixed in 16.4.5
+  - '@next/env'
+  - '@next/swc-*'
+  - hono # five advisories, fixed in 4.13.16 (via @modelcontextprotocol/sdk)
+  - '@hono/node-server' # two advisories, fixed in 2.1.6 (via @modelcontextprotocol/sdk)
+
+# Transitive dependencies forced to their patched releases.
+overrides:
+  hono: 4.13.16
+  '@hono/node-server': 2.1.6
 
 # Supply chain: only these dependencies may run install scripts. They compile
 # or fetch native binaries; everything else is denied by default.
