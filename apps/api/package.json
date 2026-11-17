@@ -26,6 +26,7 @@
     "jose": "catalog:",
     "reflect-metadata": "catalog:",
     "rxjs": "catalog:",
+    "ts-fsrs": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

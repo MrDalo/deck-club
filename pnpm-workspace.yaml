@@ -55,6 +55,8 @@ catalog:
   drizzle-orm: ^0.45.2
   drizzle-kit: ^0.31.10
   '@libsql/client': ^0.18.0
+  # scheduling (spec 6: a maintained FSRS implementation, ADR 0007)
+  ts-fsrs: ^6.0.0
   # web
   next: ^16.3.5
   react: ^19.3.0

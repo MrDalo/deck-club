@@ -5,4 +5,5 @@ export * from './errors.js';
 export * from './health.js';
 export * from './http.js';
 export * from './mcp-tools.js';
+export * from './study.js';
 export { IdSchema, LanguageSchema, PLAIN_TEXT_MESSAGE, TagListSchema } from './text.js';

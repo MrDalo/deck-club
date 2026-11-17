@@ -53,6 +53,10 @@ export class CardService {
     return cards.map(toCardDto);
   }
 
+  async get(userId: string, ref: CardRef): Promise<CardDto> {
+    return toCardDto(await this.loadCard(userId, ref));
+  }
+
   async update(userId: string, ref: CardRef, patch: UpdateCardCommand): Promise<CardDto> {
     const card = await this.loadCard(userId, ref);
     const edited = applyCardPatch(card, patch, this.clock.now());

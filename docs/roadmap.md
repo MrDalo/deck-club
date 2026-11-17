@@ -6,7 +6,7 @@ Phases come from spec 12. Each phase ships as vertical slices
 <!-- status:start -->
 
 Phase 0 (foundation) done: monorepo, CI, Docker, Claude setup, decks + cards CRUD in API, web and MCP.
-Next slice: Phase 1 study — FSRS study state, reviews, get_due_cards/submit_review, Today + review session.
+Study API done (FSRS-7, reviews, undo, Today, stats). Next: study MCP tools (Dalibor) and the web Today + review session.
 <!-- status:end -->
 
 ## Phase 0 — Foundation ✅
@@ -21,7 +21,9 @@ Next slice: Phase 1 study — FSRS study state, reviews, get_due_cards/submit_re
 
 ## Phase 1 — MVP: solo learning plus MCP
 
-- [ ] **Study slice**: `study` module (FSRS via `ts-fsrs`, study states, append-only reviews, daily limits, day boundary, undo), MCP `get_due_cards` / `submit_review` / `get_stats`, Today dashboard, review session (Space, 1–4), session summary
+- [x] **Study slice, API**: `study` module (FSRS-7 via `ts-fsrs`, ADR 0007; study states, append-only reviews, daily limits, day boundary, siblings, undo, streak, retention) with `GET /study/today`, `GET /study/due`, `POST /study/reviews`, `POST /study/reviews/undo`, `GET /study/stats`
+- [ ] **Study slice, MCP** (owner: Dalibor): `get_due_cards`, `submit_review`, `get_stats` in `apps/mcp` over the study endpoints above
+- [ ] **Study slice, web**: Today dashboard, review session (Space, 1–4, interval hints, undo), session summary
 - [ ] **MCP OAuth 2.1**: protected-resource metadata, Supabase as authorization server, scopes, AI connections in Settings (list, revoke); replaces the pasted token
 - [ ] `search_cards`, `update_card`; duplicate detection and `idempotencyKey` on `add_cards`; per-user rate limits (60 calls/min, 2,000 cards/day)
 - [ ] Profile and review settings (time zone, day start hour, limits, retention); one OAuth sign-in provider
