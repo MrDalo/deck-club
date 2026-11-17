@@ -73,6 +73,24 @@ rsync -a "$REPO_DIR"/ "$STAGE"/ \
   --exclude "*.tsbuildinfo" \
   --exclude "next-env.d.ts"
 
+echo "Removing references to the excluded agent setup from the staged copy ..."
+# README: the paragraph that introduces the Claude Code setup.
+perl -0pi -e 's/\nThis repository is set up for \[Claude Code\].*?and hooks\.\n//s' "$STAGE/README.md"
+# CONTRIBUTING: drop pointers to rule and skill files that are not in the upload.
+perl -0pi -e 's/ \(see the table in\n\s*`\.claude\/rules\/40-tests\.md`\)//; s/ \(template in `\.claude\/skills\/adr\/SKILL\.md`\)//' \
+  "$STAGE/CONTRIBUTING.md"
+# .prettierignore: entries for the vendored skill packs.
+perl -ni -e 'print unless /^(\.claude|\.agents|skills-lock\.json$|# Vendored)/' "$STAGE/.prettierignore"
+# package.json: scripts that run files excluded above.
+node -e '
+  const fs = require("fs");
+  const file = process.argv[1];
+  const pkg = JSON.parse(fs.readFileSync(file, "utf8"));
+  delete pkg.scripts["hooks:test"];
+  delete pkg.scripts["pack:alignerr"];
+  fs.writeFileSync(file, JSON.stringify(pkg, null, 2) + "\n");
+' "$STAGE/package.json"
+
 echo
 echo "=== Structure checks ==="
 
@@ -89,6 +107,12 @@ for path in .git node_modules .claude .agents CLAUDE.md AGENTS.md; do
 done
 if [ -n "$(find "$STAGE" -type d -name skills -print -quit)" ]; then
   fail "a 'skills' folder is still in the staged copy"
+fi
+
+if hits="$(grep -nE 'CLAUDE\.md|\.claude/(rules|skills|agents|hooks)|\.agents/skills|pack-for-alignerr|hooks:test' \
+  "$STAGE/README.md" "$STAGE/CONTRIBUTING.md" "$STAGE/package.json" "$STAGE/.prettierignore")" && [ -n "$hits" ]; then
+  fail "references to the excluded agent setup remain:
+$hits"
 fi
 
 env_files="$(find "$STAGE" -name ".env*" -not -name ".env.example" -not -name ".env.template")"
