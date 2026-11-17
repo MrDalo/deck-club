@@ -1,14 +1,29 @@
+# Version updates follow the same 21-day rule as pnpm's minimumReleaseAge
+# (pnpm-workspace.yaml): a release is proposed only once it has been public
+# for three weeks. Security updates are not affected by the cooldown.
 version: 2
 updates:
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: weekly }
+
   - package-ecosystem: npm
     directory: /
     schedule: { interval: weekly }
+    cooldown:
+      default-days: 21
     groups:
       minor-and-patch:
         update-types: [minor, patch]
+    ignore:
+      # `typescript` stays on 5.x on purpose: it is the JavaScript API that
+      # typescript-eslint, knip and Next's build-time check load. The compiler
+      # is TypeScript 7, installed as `typescript-native`.
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
+
   - package-ecosystem: docker
     directories: [/apps/api, /apps/mcp, /apps/web]
     schedule: { interval: weekly }
+    cooldown:
+      default-days: 21

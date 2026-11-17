@@ -17,8 +17,9 @@ next-env.d.ts
 .eslintcache
 .swc
 
-# local data (SQLite files live here in development)
-data/
+# local data (the API's SQLite file in development). Anchored: a bare `data/`
+# also matched source folders such as apps/web/src/features/decks/data/.
+/apps/api/data/
 *.db
 *.db-journal
 *.db-wal
