@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   HttpCode,
+  Inject,
   Param,
   Patch,
   Post,
@@ -26,7 +27,7 @@ import { DeckService } from '../application/deck.service.js';
 @Controller('decks')
 @UseGuards(AuthGuard)
 export class DecksController {
-  constructor(private readonly deckService: DeckService) {}
+  constructor(@Inject(DeckService) private readonly deckService: DeckService) {}
 
   @Get()
   async list(@CurrentUser() user: AuthenticatedUser): Promise<DeckList> {

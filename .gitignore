@@ -44,3 +44,9 @@ data/
 npm-debug.log*
 .pnpm-debug.log*
 .vercel
+
+# local test-runner reports
+.vitest/
+
+# personal terms for scripts/pack-for-alignerr.sh (never committed)
+.pack-denylist

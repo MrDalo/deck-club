@@ -34,5 +34,6 @@ paths:
 - **Round-trip test:** every new column is written and read back through the
   real adapter (the HTTP tests in `apps/api/test` run on in-memory SQLite);
   an in-memory adapter alone can hide a dropped field.
-- **Review/study history is append-only** (spec 3): reviews are inserted,
-  never updated.
+- **The review log is append-only** (spec 3): reviews are inserted, never
+  deleted; the one permitted update is setting `undone_at`, and every read
+  skips undone reviews.

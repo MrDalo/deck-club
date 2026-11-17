@@ -12,6 +12,10 @@ export const ERROR_CODES = {
   ROUTE_NOT_FOUND: 404,
   DECK_NOT_FOUND: 404,
   CARD_NOT_FOUND: 404,
+  /** A review asked for the reverse side of a card that is not reversible. */
+  DIRECTION_NOT_STUDIED: 422,
+  /** Undo was asked for, but there is no rating from today to take back. */
+  NOTHING_TO_UNDO: 409,
   INTERNAL: 500,
   UPSTREAM_UNAVAILABLE: 503,
 } as const;

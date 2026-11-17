@@ -5,6 +5,7 @@ import {
   Get,
   Headers,
   HttpCode,
+  Inject,
   Param,
   Patch,
   Post,
@@ -37,7 +38,7 @@ const parseCardRef = (deckId: string, cardId: string): CardRef => ({
 @Controller('decks/:deckId/cards')
 @UseGuards(AuthGuard)
 export class CardsController {
-  constructor(private readonly cardService: CardService) {}
+  constructor(@Inject(CardService) private readonly cardService: CardService) {}
 
   @Get()
   async list(

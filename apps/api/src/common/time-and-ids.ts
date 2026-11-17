@@ -15,3 +15,11 @@ export const ID_GENERATOR = Symbol('ID_GENERATOR');
 
 export const systemClock: Clock = { now: () => new Date() };
 export const randomIds: IdGenerator = { next: () => randomUUID() };
+
+/** The clock and id generator together, for use cases that stamp and name what they create. */
+export type TimeAndIds = {
+  clock: Clock;
+  ids: IdGenerator;
+};
+
+export const TIME_AND_IDS = Symbol('TIME_AND_IDS');

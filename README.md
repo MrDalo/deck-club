@@ -24,7 +24,7 @@ Architecture: [docs/architecture.md](docs/architecture.md). Product:
 
 ## Quick start
 
-Requirements: Node 24, pnpm 10 (`corepack enable`), a free
+Requirements: Node 22.12 or newer, pnpm 10 (`corepack enable`), a free
 [Supabase](https://supabase.com) project for sign-in.
 
 ```bash
