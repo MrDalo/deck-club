@@ -85,8 +85,11 @@ claude mcp add --transport http deck-club http://localhost:4100/mcp --header "Au
 ```
 
 Then ask: "What decks do I have?", "Show me my Spanish deck", "Do I already
-have a card about mitosis?" or "Make me a deck for my biology exam" —
-`list_decks`, `get_deck`, `search_cards` and `create_deck` answer, and a host
+have a card about mitosis?", "Make me a deck for my biology exam", "Add 10
+cards about cell division to it", "Fix the answer on the mitosis card" or
+"Delete the cards about meiosis" — `list_decks`, `get_deck`, `search_cards`,
+`create_deck`, `add_cards`, `update_card` and `delete_cards` answer, and a
+host
 that supports MCP Apps (Claude, ChatGPT, VS Code…) draws the result in the
 chat.
 The other tools, prompts and resources are listed but answer

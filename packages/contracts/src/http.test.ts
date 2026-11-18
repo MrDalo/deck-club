@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseBearerToken } from './http.js';
+import { NoContentSchema, parseBearerToken } from './http.js';
 
 describe('parseBearerToken', () => {
   it('extracts the token from a bearer header', () => {
@@ -16,5 +16,15 @@ describe('parseBearerToken', () => {
 
   it('returns null for another scheme', () => {
     expect(parseBearerToken('Basic dXNlcjpwYXNz')).toBeNull();
+  });
+});
+
+describe('NoContentSchema', () => {
+  it('accepts the empty body of a 204', () => {
+    expect(NoContentSchema.safeParse(undefined).success).toBe(true);
+  });
+
+  it('rejects a body where none belongs', () => {
+    expect(NoContentSchema.safeParse({ deleted: true }).success).toBe(false);
   });
 });

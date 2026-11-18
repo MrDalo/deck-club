@@ -1,20 +1,24 @@
 import {
+  type AddCardsInput,
   type Card,
   CardListSchema,
   type CardSearchCommand,
   type CardSearchResult,
   CardSearchResultSchema,
   type CreateDeckInput,
+  CardSchema,
   type Deck,
   DeckListSchema,
   DeckSchema,
+  NoContentSchema,
+  type UpdateCardInput,
 } from '@deck-club/contracts';
 import type { McpCaller } from '../../../common/mcp/mcp-caller.js';
 import type {
   ApiCredentials,
   DeckClubApiClient,
 } from '../../../infra/deck-club-api/deck-club-api-client.js';
-import type { DecksApi } from '../application/ports/decks-api.js';
+import type { DecksApi, WriteOptions, WriteResult } from '../application/ports/decks-api.js';
 
 const credentialsOf = (caller: McpCaller): ApiCredentials => ({
   accessToken: caller.accessToken,
@@ -22,6 +26,9 @@ const credentialsOf = (caller: McpCaller): ApiCredentials => ({
 });
 
 const deckPath = (deckId: string): string => `/decks/${encodeURIComponent(deckId)}`;
+
+const cardPath = (card: { deckId: string; cardId: string }): string =>
+  `${deckPath(card.deckId)}/cards/${encodeURIComponent(card.cardId)}`;
 
 /**
  * Adapter: the core API's `/decks` endpoints over the private network. It
@@ -52,12 +59,58 @@ export class HttpDecksApi implements DecksApi {
     });
   }
 
-  createDeck(caller: McpCaller, input: CreateDeckInput): Promise<Deck> {
-    return this.api.send({
+  async createDeck(
+    caller: McpCaller,
+    input: CreateDeckInput,
+    options: WriteOptions = {},
+  ): Promise<WriteResult<Deck>> {
+    const answer = await this.api.sendIdempotent({
       method: 'POST',
       path: '/decks',
       body: input,
       schema: DeckSchema,
+      credentials: credentialsOf(caller),
+      idempotencyKey: options.idempotencyKey,
+    });
+    return { value: answer.body, replayed: answer.replayed };
+  }
+
+  async addCards(
+    caller: McpCaller,
+    deckId: string,
+    input: AddCardsInput,
+    options: WriteOptions = {},
+  ): Promise<WriteResult<Card[]>> {
+    const answer = await this.api.sendIdempotent({
+      method: 'POST',
+      path: `${deckPath(deckId)}/cards/batch`,
+      body: input,
+      schema: CardListSchema,
+      credentials: credentialsOf(caller),
+      idempotencyKey: options.idempotencyKey,
+    });
+    return { value: answer.body.cards, replayed: answer.replayed };
+  }
+
+  updateCard(
+    caller: McpCaller,
+    card: { deckId: string; cardId: string },
+    patch: UpdateCardInput,
+  ): Promise<Card> {
+    return this.api.send({
+      method: 'PATCH',
+      path: cardPath(card),
+      body: patch,
+      schema: CardSchema,
+      credentials: credentialsOf(caller),
+    });
+  }
+
+  async deleteCard(caller: McpCaller, card: { deckId: string; cardId: string }): Promise<void> {
+    await this.api.send({
+      method: 'DELETE',
+      path: cardPath(card),
+      schema: NoContentSchema,
       credentials: credentialsOf(caller),
     });
   }

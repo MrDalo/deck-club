@@ -50,7 +50,8 @@ Each service has `GET /health`; the MCP server also `GET /health/ready`
 apps/api/src/
   main.ts, app.module.ts
   config/          env parsing (Zod), ConfigModule
-  common/          AppError, ProblemDetailsFilter, auth (guard, verifier port, Supabase adapter), Clock/IdGenerator ports
+  common/          AppError, ProblemDetailsFilter, auth (guard, verifier port, Supabase adapter), Clock/IdGenerator ports,
+                   idempotency (Idempotency-Key on writes: @Idempotent() interceptor, store port, SQLite adapter; ADR 0009)
   infra/database/  libSQL connection + migrations at boot
   modules/
     health/
@@ -114,24 +115,44 @@ recipe for building a tool: [`mcp-server.md`](mcp-server.md).
    `create_deck` is the first write: `POST /decks` with the caller's token,
    the deck created private and owned by the token's user.
 5. `tools/call add_cards`: arguments validated with
-   `AddCardsToolInputSchema`, scope `decks:write` checked, use case run.
-   Today it answers `REJECTED: NOT_IMPLEMENTED`; once built it calls
-   `POST /decks/:id/cards/batch` the same way, the API runs the same use
-   case as the web app (provenance `mcp`/`Claude`), and the result links the
-   deck.
+   `AddCardsToolInputSchema` (the web editor's card schema), scope
+   `decks:write` checked, use case run: `GET /decks/:id` (refuses another
+   user's deck before any write), then `POST /decks/:id/cards/batch` with the
+   caller's token, `x-deck-club-client: Claude` and, when the AI sent an
+   `idempotencyKey`, `Idempotency-Key` (a retry is answered with the first
+   batch, not added again), so the API runs the same use case as the web app
+   (all or nothing, provenance `mcp`/`Claude`), then
+   `GET /decks/:id/cards` to find where the new cards sit. The result gives
+   the AI the new card ids and the deck link, and the cards added view shows
+   them in the chat.
 
 ## Data
 
 SQLite through `@libsql/client` and Drizzle (ADR 0003). Each module owns its
-tables (`decks`, `cards` today) in
-`infrastructure/drizzle/<module>.schema.ts`; migrations are generated into
-`apps/api/drizzle/` and applied at boot. User content is soft-deleted.
+tables (`decks`, `cards`, `study_states`, `reviews` today) in
+`infrastructure/drizzle/<module>.schema.ts`; the shared kernel's
+`idempotency_keys` (not business data, kept a day) sits in
+`common/idempotency/`. Migrations are generated into `apps/api/drizzle/` and
+applied at boot. User content is soft-deleted.
 
 ## Contracts
 
 `packages/contracts` holds every Zod schema, DTO type, error code, header
 name and MCP tool input. The web form, the API controller and the MCP tool
 parse with the same schema, so the UI and the AI cannot validate differently.
+
+## Retrying writes
+
+Writes that would change something again when repeated (`POST /decks`,
+`POST /decks/:id/cards`, `POST /decks/:id/cards/batch`, `POST /study/reviews`,
+`POST /study/reviews/undo`) take an optional `Idempotency-Key` header
+(ADR 0009). Per user, a retry of the same request gets the first response
+back with `Idempotent-Replayed: true` and writes nothing; the key with a
+different request is `IDEMPOTENCY_KEY_REUSED` (422), and while the first
+request still runs, `IDEMPOTENCY_KEY_IN_USE` (409). Failed requests are not
+kept, so a corrected retry can reuse the key. Keys live 24 hours. The MCP
+server forwards the `idempotencyKey` of `create_deck` and `add_cards` as this
+header.
 
 ## Errors
 

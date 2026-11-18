@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { CARD_LIMITS } from './card.js';
 import {
+  AddCardsOutputSchema,
   AddCardsToolInputSchema,
   CreateBattleToolInputSchema,
   CreateDeckOutputSchema,
+  CreateDeckToolInputSchema,
+  DeleteCardsOutputSchema,
   DeleteCardsToolInputSchema,
   GetDeckToolInputSchema,
   GetDueCardsToolInputSchema,
@@ -16,6 +19,7 @@ import {
   ListDecksOutputSchema,
   SearchCardsOutputSchema,
   SearchCardsToolInputSchema,
+  UpdateCardOutputSchema,
   UpdateCardToolInputSchema,
 } from './mcp-tools.js';
 
@@ -352,5 +356,163 @@ describe('CreateDeckOutputSchema', () => {
       CreateDeckOutputSchema.safeParse({ deck: withoutUrl, libraryUrl: 'https://deck.club/decks' })
         .success,
     ).toBe(false);
+  });
+});
+
+describe('AddCardsOutputSchema', () => {
+  const page = {
+    deck: {
+      id: DECK_ID,
+      title: 'Spanish verbs',
+      description: '',
+      language: 'es',
+      cardCount: 43,
+      url: `https://deck.club/decks/${DECK_ID}`,
+    },
+    cards: [
+      {
+        id: CARD_ID,
+        type: 'basic',
+        front: 'hablar',
+        back: 'to speak',
+        extra: '',
+        tags: [],
+        addedBy: 'Claude',
+      },
+    ],
+    firstCardNumber: 43,
+    nextCursor: null,
+  };
+
+  it('accepts a deck page starting at the cards just added, with how many were added', () => {
+    const output = { ...page, addedCount: 1 };
+
+    expect(AddCardsOutputSchema.parse(output)).toEqual(output);
+  });
+
+  it('is still a get_deck page, so the view can read on with get_deck', () => {
+    expect(GetDeckOutputSchema.safeParse({ ...page, addedCount: 1 }).success).toBe(true);
+  });
+
+  it('rejects a result that added nothing', () => {
+    expect(AddCardsOutputSchema.safeParse({ ...page, addedCount: 0 }).success).toBe(false);
+  });
+
+  it('rejects more added cards than one batch may hold', () => {
+    expect(
+      AddCardsOutputSchema.safeParse({ ...page, addedCount: CARD_LIMITS.perBatch + 1 }).success,
+    ).toBe(false);
+  });
+});
+
+describe('CreateDeckToolInputSchema', () => {
+  it('accepts an idempotency key, so a retried create never makes a second deck', () => {
+    expect(
+      CreateDeckToolInputSchema.parse({ title: 'Biology', idempotencyKey: 'create-key-0001' }),
+    ).toEqual({
+      title: 'Biology',
+      description: '',
+      language: 'en',
+      tags: [],
+      idempotencyKey: 'create-key-0001',
+    });
+  });
+
+  it('leaves the key out when the AI sends none', () => {
+    expect(CreateDeckToolInputSchema.parse({ title: 'Biology' })).not.toHaveProperty(
+      'idempotencyKey',
+    );
+  });
+
+  it('rejects a key outside the safe set', () => {
+    expect(
+      CreateDeckToolInputSchema.safeParse({ title: 'Biology', idempotencyKey: 'not a key' })
+        .success,
+    ).toBe(false);
+  });
+});
+
+describe('UpdateCardOutputSchema', () => {
+  const card = {
+    id: CARD_ID,
+    type: 'basic',
+    front: 'hablar',
+    back: 'to speak',
+    extra: '',
+    tags: [],
+    addedBy: 'Claude',
+  };
+  const output = {
+    deck: { id: DECK_ID, title: 'Spanish verbs', url: `https://deck.club/decks/${DECK_ID}` },
+    card: { ...card, back: 'to speak, to talk' },
+    previous: card,
+    changedFields: ['back'],
+  };
+
+  it('accepts the card as it is now and as it was, with what changed', () => {
+    expect(UpdateCardOutputSchema.parse(output)).toEqual(output);
+  });
+
+  it('accepts an edit that changed nothing', () => {
+    expect(UpdateCardOutputSchema.safeParse({ ...output, card, changedFields: [] }).success).toBe(
+      true,
+    );
+  });
+
+  it('rejects a field update_card cannot change', () => {
+    expect(UpdateCardOutputSchema.safeParse({ ...output, changedFields: ['type'] }).success).toBe(
+      false,
+    );
+  });
+
+  it('rejects a result without the card as it was', () => {
+    const { previous: _omitted, ...withoutPrevious } = output;
+
+    expect(UpdateCardOutputSchema.safeParse(withoutPrevious).success).toBe(false);
+  });
+});
+
+describe('DeleteCardsOutputSchema', () => {
+  const deleted = {
+    id: CARD_ID,
+    type: 'basic',
+    front: 'hablar',
+    back: 'to speak',
+    extra: '',
+    tags: [],
+    addedBy: null,
+  };
+  const output = {
+    deck: {
+      id: DECK_ID,
+      title: 'Spanish verbs',
+      url: `https://deck.club/decks/${DECK_ID}`,
+      cardCount: 41,
+    },
+    deleted: [deleted],
+    notFound: [],
+    notDeleted: [],
+  };
+
+  it('accepts the cards deleted, with the deck’s new count', () => {
+    expect(DeleteCardsOutputSchema.parse(output)).toEqual(output);
+  });
+
+  it('accepts a call that deleted nothing, with the ids it could not find', () => {
+    expect(
+      DeleteCardsOutputSchema.safeParse({ ...output, deleted: [], notFound: [CARD_ID] }).success,
+    ).toBe(true);
+  });
+
+  it('rejects an id that is not a UUID', () => {
+    expect(DeleteCardsOutputSchema.safeParse({ ...output, notDeleted: ['card-1'] }).success).toBe(
+      false,
+    );
+  });
+
+  it('rejects more deleted cards than one call may delete', () => {
+    const many = Array.from({ length: CARD_LIMITS.perBatch + 1 }, () => deleted);
+
+    expect(DeleteCardsOutputSchema.safeParse({ ...output, deleted: many }).success).toBe(false);
   });
 });

@@ -40,6 +40,15 @@ describe('formatCreatedDeck', () => {
     );
   });
 
+  it('says first that no second deck was made when it answers a retry with the same key', () => {
+    const text = formatCreatedDeck(toCreatedDeck(DECK, WEB_URL), true);
+
+    expect(text.split('\n').slice(0, 2)).toEqual([
+      'Already done: an earlier create_deck call with this idempotencyKey created this deck, so no second deck was made.',
+      `Created the private deck "Spanish verbs" (id: ${DECK.id}, language: es, tags: a1, verbs).`,
+    ]);
+  });
+
   it('leaves tags out when the deck has none', () => {
     expect(formatCreatedDeck(toCreatedDeck({ ...DECK, tags: [] }, WEB_URL))).toContain(
       `(id: ${DECK.id}, language: es).`,

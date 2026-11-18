@@ -172,7 +172,10 @@ describe('HttpDecksApi.createDeck', () => {
   it('posts the deck to /decks as JSON with the caller’s credentials', async () => {
     const { decks, fetchFunction } = apiAnswering(Response.json(DECK, { status: 201 }));
 
-    await expect(decks.createDeck(testCaller(), INPUT)).resolves.toEqual(DECK);
+    await expect(decks.createDeck(testCaller(), INPUT)).resolves.toEqual({
+      value: DECK,
+      replayed: false,
+    });
     const [url, init] = fetchFunction.mock.calls[0]!;
     expect([url.toString(), init.method, init.body]).toEqual([
       'http://api:4000/decks',
@@ -183,6 +186,20 @@ describe('HttpDecksApi.createDeck', () => {
       authorization: 'Bearer token-ana',
       'x-deck-club-client': 'Claude',
       'content-type': 'application/json',
+    });
+    expect(init.headers).not.toHaveProperty('idempotency-key');
+  });
+
+  it('sends the AI’s idempotency key and reports the API’s replay of the first deck', async () => {
+    const { decks, fetchFunction } = apiAnswering(
+      Response.json(DECK, { status: 201, headers: { 'idempotent-replayed': 'true' } }),
+    );
+
+    await expect(
+      decks.createDeck(testCaller(), INPUT, { idempotencyKey: 'create-key-0001' }),
+    ).resolves.toEqual({ value: DECK, replayed: true });
+    expect(fetchFunction.mock.calls[0]![1].headers).toMatchObject({
+      'idempotency-key': 'create-key-0001',
     });
   });
 
@@ -210,5 +227,233 @@ describe('HttpDecksApi.createDeck', () => {
     await expect(decks.createDeck(testCaller(), INPUT)).rejects.toMatchObject({
       code: 'UPSTREAM_UNAVAILABLE',
     });
+  });
+});
+
+describe('HttpDecksApi.addCards', () => {
+  const INPUT = {
+    cards: [
+      { type: 'reversible' as const, front: 'hablar', back: 'to speak', extra: '', tags: [] },
+    ],
+  };
+  const CREATED = testCard({
+    id: '00000000-0000-4000-8000-000000000003',
+    deckId: DECK.id,
+    type: 'reversible',
+    front: 'hablar',
+    back: 'to speak',
+    provenance: { source: 'mcp', clientName: 'Claude' },
+  });
+
+  it('posts the batch to /decks/:deckId/cards/batch with the caller’s credentials', async () => {
+    const { decks, fetchFunction } = apiAnswering(Response.json({ cards: [CREATED] }));
+
+    await expect(decks.addCards(testCaller(), DECK.id, INPUT)).resolves.toEqual({
+      value: [CREATED],
+      replayed: false,
+    });
+    const [url, init] = fetchFunction.mock.calls[0]!;
+    expect([url.toString(), init.method, init.body]).toEqual([
+      `http://api:4000/decks/${DECK.id}/cards/batch`,
+      'POST',
+      JSON.stringify(INPUT),
+    ]);
+    expect(init.headers).toMatchObject({
+      authorization: 'Bearer token-ana',
+      'x-deck-club-client': 'Claude',
+      'content-type': 'application/json',
+    });
+  });
+
+  it('sends the AI’s idempotency key, and reports a replay of the cards already added', async () => {
+    const { decks, fetchFunction } = apiAnswering(
+      Response.json({ cards: [CREATED] }, { headers: { 'idempotent-replayed': 'true' } }),
+    );
+
+    await expect(
+      decks.addCards(testCaller(), DECK.id, INPUT, { idempotencyKey: 'batch-key-0001' }),
+    ).resolves.toEqual({ value: [CREATED], replayed: true });
+    expect(fetchFunction.mock.calls[0]![1].headers).toMatchObject({
+      'idempotency-key': 'batch-key-0001',
+    });
+  });
+
+  it('relays the API’s refusal while an earlier call with the key still runs', async () => {
+    const problem = {
+      type: 'about:blank',
+      title: 'IDEMPOTENCY_KEY_IN_USE',
+      status: 409,
+      code: 'IDEMPOTENCY_KEY_IN_USE',
+      detail: 'A request with this Idempotency-Key is still running. Try again in a moment.',
+      traceId: 'trace-8',
+    };
+    const { decks } = apiAnswering(Response.json(problem, { status: 409 }));
+
+    await expect(
+      decks.addCards(testCaller(), DECK.id, INPUT, { idempotencyKey: 'batch-key-0001' }),
+    ).rejects.toMatchObject({ code: 'IDEMPOTENCY_KEY_IN_USE' });
+  });
+
+  it('encodes the deck id, so it can never change the path it posts to', async () => {
+    const { decks, fetchFunction } = apiAnswering(Response.json({ cards: [] }));
+
+    await decks.addCards(testCaller(), '../admin', INPUT);
+
+    expect(fetchFunction.mock.calls[0]![0].pathname).toBe('/decks/..%2Fadmin/cards/batch');
+  });
+
+  it('relays the API’s field problems when it refuses a card', async () => {
+    const problem = {
+      type: 'about:blank',
+      title: 'VALIDATION_FAILED',
+      status: 400,
+      code: 'VALIDATION_FAILED',
+      detail: 'The request body is invalid.',
+      traceId: 'trace-6',
+      issues: [
+        { path: 'cards.0.front', message: 'Text must be plain: HTML tags are not allowed.' },
+      ],
+    };
+    const { decks } = apiAnswering(Response.json(problem, { status: 400 }));
+
+    await expect(decks.addCards(testCaller(), DECK.id, INPUT)).rejects.toMatchObject({
+      code: 'VALIDATION_FAILED',
+      issues: [{ path: 'cards.0.front' }],
+    });
+  });
+
+  it('relays DECK_NOT_FOUND for a deck that is not the caller’s', async () => {
+    const problem = {
+      type: 'about:blank',
+      title: 'DECK_NOT_FOUND',
+      status: 404,
+      code: 'DECK_NOT_FOUND',
+      detail: 'No deck with that id exists in your library.',
+      traceId: 'trace-7',
+    };
+    const { decks } = apiAnswering(Response.json(problem, { status: 404 }));
+
+    await expect(decks.addCards(testCaller(), DECK.id, INPUT)).rejects.toMatchObject({
+      code: 'DECK_NOT_FOUND',
+    });
+  });
+
+  it('reports INTERNAL when the answer breaks the card contract', async () => {
+    const { decks } = apiAnswering(Response.json({ cards: [{ id: 'not-a-card' }] }));
+
+    await expect(decks.addCards(testCaller(), DECK.id, INPUT)).rejects.toMatchObject({
+      code: 'INTERNAL',
+    });
+  });
+});
+
+describe('HttpDecksApi.updateCard', () => {
+  const CARD_ID = '00000000-0000-4000-8000-000000000003';
+  const UPDATED = testCard({ id: CARD_ID, deckId: DECK.id, front: 'hablar', back: 'to talk' });
+
+  it('patches /decks/:deckId/cards/:cardId with only the changed fields', async () => {
+    const { decks, fetchFunction } = apiAnswering(Response.json(UPDATED));
+
+    await expect(
+      decks.updateCard(testCaller(), { deckId: DECK.id, cardId: CARD_ID }, { back: 'to talk' }),
+    ).resolves.toEqual(UPDATED);
+    const [url, init] = fetchFunction.mock.calls[0]!;
+    expect([url.toString(), init.method, init.body]).toEqual([
+      `http://api:4000/decks/${DECK.id}/cards/${CARD_ID}`,
+      'PATCH',
+      '{"back":"to talk"}',
+    ]);
+    expect(init.headers).toMatchObject({
+      authorization: 'Bearer token-ana',
+      'x-deck-club-client': 'Claude',
+    });
+  });
+
+  it('encodes both ids, so neither can change the path it patches', async () => {
+    const { decks, fetchFunction } = apiAnswering(Response.json(UPDATED));
+
+    await decks
+      .updateCard(testCaller(), { deckId: '../x', cardId: '../../admin' }, { back: 'b' })
+      .catch(() => undefined);
+
+    expect(fetchFunction.mock.calls[0]![0].pathname).toBe('/decks/..%2Fx/cards/..%2F..%2Fadmin');
+  });
+
+  it('relays CARD_NOT_FOUND for a card that is not in the deck', async () => {
+    const problem = {
+      type: 'about:blank',
+      title: 'CARD_NOT_FOUND',
+      status: 404,
+      code: 'CARD_NOT_FOUND',
+      detail: 'No card with that id exists in this deck.',
+      traceId: 'trace-10',
+    };
+    const { decks } = apiAnswering(Response.json(problem, { status: 404 }));
+
+    await expect(
+      decks.updateCard(testCaller(), { deckId: DECK.id, cardId: CARD_ID }, { back: 'b' }),
+    ).rejects.toMatchObject({ code: 'CARD_NOT_FOUND' });
+  });
+
+  it('reports INTERNAL when the answer breaks the card contract', async () => {
+    const { decks } = apiAnswering(Response.json({ id: CARD_ID }));
+
+    await expect(
+      decks.updateCard(testCaller(), { deckId: DECK.id, cardId: CARD_ID }, { back: 'b' }),
+    ).rejects.toMatchObject({ code: 'INTERNAL' });
+  });
+});
+
+describe('HttpDecksApi.deleteCard', () => {
+  const CARD_ID = '00000000-0000-4000-8000-000000000003';
+
+  it('sends DELETE /decks/:deckId/cards/:cardId with the caller’s credentials', async () => {
+    const { decks, fetchFunction } = apiAnswering(new Response(null, { status: 204 }));
+
+    await expect(
+      decks.deleteCard(testCaller(), { deckId: DECK.id, cardId: CARD_ID }),
+    ).resolves.toBeUndefined();
+    const [url, init] = fetchFunction.mock.calls[0]!;
+    expect([url.toString(), init.method, init.body]).toEqual([
+      `http://api:4000/decks/${DECK.id}/cards/${CARD_ID}`,
+      'DELETE',
+      undefined,
+    ]);
+    expect(init.headers).toMatchObject({
+      authorization: 'Bearer token-ana',
+      'x-deck-club-client': 'Claude',
+    });
+  });
+
+  it('encodes both ids, so neither can change the path it deletes', async () => {
+    const { decks, fetchFunction } = apiAnswering(new Response(null, { status: 204 }));
+
+    await decks.deleteCard(testCaller(), { deckId: '../x', cardId: '../../admin' });
+
+    expect(fetchFunction.mock.calls[0]![0].pathname).toBe('/decks/..%2Fx/cards/..%2F..%2Fadmin');
+  });
+
+  it('relays CARD_NOT_FOUND for a card that is not in the deck', async () => {
+    const problem = {
+      type: 'about:blank',
+      title: 'CARD_NOT_FOUND',
+      status: 404,
+      code: 'CARD_NOT_FOUND',
+      detail: 'No card with that id exists in this deck.',
+      traceId: 'trace-11',
+    };
+    const { decks } = apiAnswering(Response.json(problem, { status: 404 }));
+
+    await expect(
+      decks.deleteCard(testCaller(), { deckId: DECK.id, cardId: CARD_ID }),
+    ).rejects.toMatchObject({ code: 'CARD_NOT_FOUND' });
+  });
+
+  it('reports the API as unavailable when it cannot be reached', async () => {
+    const { decks } = apiAnswering(new TypeError('fetch failed'));
+
+    await expect(
+      decks.deleteCard(testCaller(), { deckId: DECK.id, cardId: CARD_ID }),
+    ).rejects.toMatchObject({ code: 'UPSTREAM_UNAVAILABLE' });
   });
 });

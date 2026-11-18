@@ -1,4 +1,9 @@
-import { CLIENT_NAME_HEADER, ProblemDetailsSchema } from '@deck-club/contracts';
+import {
+  CLIENT_NAME_HEADER,
+  IDEMPOTENCY_KEY_HEADER,
+  IDEMPOTENT_REPLAYED_HEADER,
+  ProblemDetailsSchema,
+} from '@deck-club/contracts';
 import type { ZodType } from 'zod';
 import { DeckClubError } from '../../common/errors/deck-club-error.js';
 import type { FetchFunction } from '../../common/http/fetch-function.js';
@@ -23,6 +28,19 @@ export type ApiRequest<Output> = {
   /** Omitted only for public endpoints such as `/health`. */
   credentials?: ApiCredentials;
   timeoutMs?: number;
+};
+
+/** A write that is safe to retry: sent with the AI's idempotency key, when it gave one. */
+export type IdempotentApiRequest<Output> = ApiRequest<Output> & {
+  /** Sent as `Idempotency-Key`; omitted, the write runs as usual. */
+  idempotencyKey?: string | undefined;
+};
+
+/** The answer to an idempotent write. */
+export type IdempotentApiResponse<Output> = {
+  body: Output;
+  /** True when the API answered a retry with the first request's response and wrote nothing. */
+  replayed: boolean;
 };
 
 /**
@@ -67,6 +85,28 @@ export class DeckClubApiClient {
    */
   async send<Output>(request: ApiRequest<Output>): Promise<Output> {
     const response = await this.exchange(request);
+    return this.read(request, response);
+  }
+
+  /**
+   * Sends a write with the AI's idempotency key (ADR 0009), so a retried
+   * tool call never writes twice: the API answers a retry with the first
+   * request's response.
+   * @param request - the write, and the key when the AI gave one
+   * @returns the parsed response body, and whether it was a replay
+   * @throws DeckClubError as {@link DeckClubApiClient.send}, including IDEMPOTENCY_KEY_REUSED and IDEMPOTENCY_KEY_IN_USE
+   */
+  async sendIdempotent<Output>(
+    request: IdempotentApiRequest<Output>,
+  ): Promise<IdempotentApiResponse<Output>> {
+    const response = await this.exchange(request);
+    return {
+      body: await this.read(request, response),
+      replayed: response.headers.get(IDEMPOTENT_REPLAYED_HEADER) === 'true',
+    };
+  }
+
+  private async read<Output>(request: ApiRequest<Output>, response: Response): Promise<Output> {
     const payload: unknown =
       response.status === 204 ? undefined : await response.json().catch(() => null);
     if (!response.ok) throw toApiError(payload, response.status);
@@ -76,7 +116,7 @@ export class DeckClubApiClient {
     return parsed.data;
   }
 
-  private async exchange(request: ApiRequest<unknown>): Promise<Response> {
+  private async exchange(request: IdempotentApiRequest<unknown>): Promise<Response> {
     const hasBody = request.body !== undefined;
     try {
       return await this.fetchFunction(this.urlFor(request), {
@@ -86,6 +126,9 @@ export class DeckClubApiClient {
           ...(request.credentials !== undefined && {
             authorization: `Bearer ${request.credentials.accessToken}`,
             [CLIENT_NAME_HEADER]: request.credentials.clientName,
+          }),
+          ...(request.idempotencyKey !== undefined && {
+            [IDEMPOTENCY_KEY_HEADER]: request.idempotencyKey,
           }),
           ...(hasBody && { 'content-type': 'application/json' }),
         },

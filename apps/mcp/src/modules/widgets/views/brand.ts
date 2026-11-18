@@ -137,6 +137,18 @@ mark {
 .deck-grid-single { grid-template-columns: minmax(0, 22rem); }
 .panel { margin-top: 16px; border: 2px solid var(--color-ink); border-radius: var(--radius-card); background-color: var(--color-butter); padding: 14px 16px; }
 .panel .lead { margin-bottom: 10px; }
+.changes { display: grid; gap: 8px; margin: 4px 0 12px; }
+.change { display: grid; grid-template-columns: 4.5rem minmax(0, 1fr); gap: 8px; align-items: baseline; }
+.change dt { color: var(--color-ink-soft); font-size: 0.75rem; font-weight: 700; }
+.change dd { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+.change del { color: var(--color-ink-soft); text-decoration-thickness: 2px; }
+.change ins { text-decoration: none; font-weight: 700; }
+.change-arrow { color: var(--color-ink-soft); }
+.change-none { font-weight: 400; }
+.deleted-list { display: grid; gap: 8px; list-style: none; margin: 16px 0 0; padding: 0; }
+.deleted-card { border: 2px dashed rgba(36, 32, 58, 0.4); border-radius: 1rem; background-color: var(--color-card); padding: 8px 14px; overflow-wrap: anywhere; }
+.deleted-front { font-weight: 700; white-space: pre-wrap; }
+.deleted-back { color: var(--color-ink-soft); font-size: 0.9rem; white-space: pre-wrap; }
 .empty { margin-top: 16px; border: 2px dashed rgba(36, 32, 58, 0.4); border-radius: var(--radius-card); padding: 24px; text-align: center; }
 .empty-title { font-family: var(--font-display); font-size: 1.15rem; font-weight: 700; }
 .footer { margin-top: 14px; }

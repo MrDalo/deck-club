@@ -14,12 +14,15 @@ describe('VIEW_ENTRIES', () => {
       await expect(access(path.join(process.cwd(), entry))).resolves.toBeUndefined();
   });
 
-  it('builds the views of the four tools with a UI so far', () => {
+  it('builds the views of the seven tools with a UI so far', () => {
     expect(Object.keys(VIEW_ENTRIES)).toEqual([
       'deckLibrary',
       'deck',
       'searchResults',
       'deckCreated',
+      'cardsAdded',
+      'cardUpdated',
+      'cardsDeleted',
     ]);
   });
 });

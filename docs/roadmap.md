@@ -6,7 +6,7 @@ Phases come from spec 12. Each phase ships as vertical slices
 <!-- status:start -->
 
 Phase 0 (foundation) done: monorepo, CI, Docker, Claude setup, decks + cards CRUD in API, web and MCP.
-Study API done (FSRS-6 via ts-fsrs 5, reviews, undo, Today, stats). MCP server rebuilt on SDK v2 (stateless) with Supabase OAuth 2.1, readiness and the full spec 9 interface (ADR 0008); `list_decks`, `get_deck`, `search_cards` (with `GET /cards/search` in the API) and `create_deck` are implemented with their MCP Apps views. Next: `add_cards`, then the OAuth consent page in web.
+Study API done (FSRS-6 via ts-fsrs 5, reviews, undo, Today, stats). MCP server rebuilt on SDK v2 (stateless) with Supabase OAuth 2.1, readiness and the full spec 9 interface (ADR 0008); `list_decks`, `get_deck`, `search_cards` (with `GET /cards/search` in the API), `create_deck`, `add_cards`, `update_card` and `delete_cards` are implemented with their MCP Apps views. Next: the study tools (`get_due_cards`, `submit_review`, `get_stats`) and the OAuth consent page in web.
 <!-- status:end -->
 
 ## Phase 0 — Foundation ✅
@@ -27,11 +27,16 @@ Study API done (FSRS-6 via ts-fsrs 5, reviews, undo, Today, stats). MCP server r
 - [x] **`get_deck` over the API**, paged (25 cards, deck-bound cursor), with its MCP Apps view (ruled index cards, "Added by" chips, "Show more cards" through the host); view code refactored into shared components and one view runtime
 - [x] **`search_cards` end to end**: `GET /cards/search` in the API (matching rule in the decks domain: every word, case- and accent-insensitive, ranked with the likely duplicate first), the MCP tool, and its MCP Apps view (highlighted matches, search box that re-runs the tool through the host); shared view components extracted (index card, highlight, tool output, host calls)
 - [x] **`create_deck` over the API**, the first write: `POST /decks`, private by default, with its MCP Apps view (the new deck's tile and the next step); API field problems relayed to the AI as `Fix: <field>: <message>`; `deckTile` extracted as a shared view component
-- [ ] **The rest of the deck tools over the API**: `add_cards` (worked on SDK v1, reset by the rebuild), then `update_card`, `delete_cards`; an idempotency key for writes (spec 9) once the API supports one
+- [x] **`add_cards` over the API**: `POST /decks/:id/cards/batch` (all or nothing, "Added by" provenance), with its MCP Apps view (the cards just added, paged through `get_deck`, and the next step); a write is never reported as a refusal, and an unconfirmed write tells the AI to check before retrying
+- [x] **Idempotency keys in the API** (ADR 0009): optional `Idempotency-Key` header on `POST /decks`, `/decks/:id/cards`, `/decks/:id/cards/batch`, `/study/reviews`, `/study/reviews/undo`; retries replay the first response, a reused key is `IDEMPOTENCY_KEY_REUSED`, a running one `IDEMPOTENCY_KEY_IN_USE`
+- [x] **Idempotency keys in the MCP server**: `create_deck` and `add_cards` forward the AI's `idempotencyKey` as `Idempotency-Key`; a replayed answer says nothing was written twice, and refusals tell the AI how to retry safely
+- [x] **`update_card` over the API**: `PATCH /decks/:id/cards/:cardId` (only the fields sent, type, author and study state kept), with its MCP Apps view (the card now, each change before and after, "Undo this change" through the host)
+- [x] **`delete_cards` over the API**: one `DELETE` per card, every id answered (deleted, not found, not deleted when Deck Club stops part-way), with its MCP Apps view (the deleted cards and "Add them back as new cards" through the host, with a stable idempotency key)
+- [ ] **Restoring deleted cards** (spec 3: soft delete for 30 days, so mistakes can be undone): an API endpoint and a screen in the web app; then the cards deleted view offers a true restore that keeps study progress
 - [ ] **Study slice, MCP**: `get_due_cards`, `submit_review`, `get_stats` in `apps/mcp` over the study endpoints above
 - [ ] **Study slice, web**: Today dashboard, review session (Space, 1–4, interval hints, undo), session summary
 - [ ] **MCP OAuth 2.1, web side**: the consent page Supabase's OAuth server redirects to, scope grants per AI connection (read by `grantedScopes`), AI connections in Settings (list, revoke); then retire the pasted token. The MCP side is done (see MCP platform).
-- [ ] `update_card`; duplicate detection on `add_cards` (reusing the card search rule) and `idempotencyKey`; per-user rate limits (60 calls/min, 2,000 cards/day)
+- [ ] Duplicate detection on `add_cards` (reusing the card search rule); per-user rate limits (60 calls/min, 2,000 cards/day)
 - [ ] Profile and review settings (time zone, day start hour, limits, retention); one OAuth sign-in provider
 - [ ] Tags and search on the deck page; bulk actions; card type `reversible` sibling handling
 - [ ] CSV import and export, full JSON export, account deletion
@@ -50,4 +55,4 @@ Realtime service (choice open), host and player screens, guest join, scoring,
 ## Phase 4 — Sharing and polish
 
 Public gallery with licences and reporting, Anki import/export, MCP prompts,
-`delete_cards`, PWA install and reminders.
+PWA install and reminders.

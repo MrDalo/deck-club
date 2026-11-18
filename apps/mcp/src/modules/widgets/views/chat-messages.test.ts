@@ -6,7 +6,10 @@ import {
   askForCardsFromNotes,
   askForMoreCards,
   askForQuiz,
+  askToAddBack,
+  askToDeleteRest,
   askToSearch,
+  askToUndoCardChange,
 } from './chat-messages.js';
 
 describe('chat messages', () => {
@@ -16,6 +19,18 @@ describe('chat messages', () => {
     expect(askForMoreCards('Biology')).toBe('Show me the next cards of my "Biology" deck.');
     expect(askForCardsAbout('mitosis')).toBe('Make 10 cards about "mitosis".');
     expect(askToSearch('mitosis')).toBe('Search my cards for "mitosis".');
+    expect(askToAddBack('Biology', 3)).toBe(
+      'Add the 3 cards you just deleted back to my "Biology" deck as new cards.',
+    );
+    expect(askToAddBack('Biology', 1)).toBe(
+      'Add the card you just deleted back to my "Biology" deck as new cards.',
+    );
+    expect(askToDeleteRest('Biology', 2)).toBe(
+      'Try again to delete the 2 cards you could not delete from my "Biology" deck.',
+    );
+    expect(askToUndoCardChange('hablar')).toBe(
+      'Change my card "hablar" back to how it was before your edit.',
+    );
     expect(askForCardsFromNotes('Biology')).toBe(
       'Turn my notes into cards for my "Biology" deck. I will paste them next.',
     );

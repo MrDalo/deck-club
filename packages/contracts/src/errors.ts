@@ -16,6 +16,10 @@ export const ERROR_CODES = {
   DIRECTION_NOT_STUDIED: 422,
   /** Undo was asked for, but there is no rating from today to take back. */
   NOTHING_TO_UNDO: 409,
+  /** An `Idempotency-Key` already used for a different request (another route or body). */
+  IDEMPOTENCY_KEY_REUSED: 422,
+  /** A request with the same `Idempotency-Key` is still running; retry it in a moment. */
+  IDEMPOTENCY_KEY_IN_USE: 409,
   INTERNAL: 500,
   /** The capability exists in the published interface (an MCP tool, resource or prompt) but is not built yet. */
   NOT_IMPLEMENTED: 501,

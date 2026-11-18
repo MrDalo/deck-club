@@ -208,6 +208,7 @@ export const CreateDeckToolInputSchema = z.object({
     'Language code of the card content, for example en, es, sk.',
   ),
   tags: CreateDeckInputSchema.shape.tags.describe('Optional lowercase topic tags, at most 10.'),
+  idempotencyKey: IdempotencyKeySchema.optional(),
 });
 export type CreateDeckToolInput = z.infer<typeof CreateDeckToolInputSchema>;
 
@@ -234,6 +235,17 @@ export const AddCardsToolInputSchema = z.object({
 });
 export type AddCardsToolInput = z.infer<typeof AddCardsToolInputSchema>;
 
+/**
+ * Structured result of `add_cards`: the tool's `outputSchema`, and the data
+ * its view renders. It is a `get_deck` page that starts at the first card
+ * just added (so the view reads the rest of them with `get_deck` and the
+ * cursor), plus how many cards the call added. A batch is all or nothing.
+ */
+export const AddCardsOutputSchema = GetDeckOutputSchema.extend({
+  addedCount: z.number().int().min(1).max(CARD_LIMITS.perBatch),
+});
+export type AddCardsOutput = z.infer<typeof AddCardsOutputSchema>;
+
 /** `update_card` arguments: a card and the fields to change. Editing keeps study state (spec 3). */
 export const UpdateCardToolInputSchema = z
   .object({
@@ -248,6 +260,26 @@ export const UpdateCardToolInputSchema = z
   );
 export type UpdateCardToolInput = z.infer<typeof UpdateCardToolInputSchema>;
 
+/** The parts of a card `update_card` can change; the card's type is never one of them (spec 3). */
+export const CARD_EDIT_FIELDS = ['front', 'back', 'extra', 'tags'] as const;
+export const CardEditFieldSchema = z.enum(CARD_EDIT_FIELDS);
+export type CardEditField = z.infer<typeof CardEditFieldSchema>;
+
+/**
+ * Structured result of `update_card`: the tool's `outputSchema`, and the data
+ * its view renders. The card as it is now and as it was, so the user can see
+ * (and undo) exactly what the AI changed.
+ */
+export const UpdateCardOutputSchema = z.object({
+  deck: z.object({ id: IdSchema, title: z.string(), url: z.url() }),
+  card: DeckCardSchema,
+  /** The card before the edit. */
+  previous: DeckCardSchema,
+  /** The fields whose value differs from before, in card order; empty when nothing changed. */
+  changedFields: z.array(CardEditFieldSchema).max(CARD_EDIT_FIELDS.length),
+});
+export type UpdateCardOutput = z.infer<typeof UpdateCardOutputSchema>;
+
 /** `delete_cards` arguments: cards of one deck to soft-delete (restorable for 30 days, spec 3). */
 export const DeleteCardsToolInputSchema = z.object({
   deckId: DeckIdArgument,
@@ -258,6 +290,27 @@ export const DeleteCardsToolInputSchema = z.object({
     .describe(`1 to ${CARD_LIMITS.perBatch} card ids from this deck.`),
 });
 export type DeleteCardsToolInput = z.infer<typeof DeleteCardsToolInputSchema>;
+
+/**
+ * Structured result of `delete_cards`: the tool's `outputSchema`, and the
+ * data its view renders. Each id asked for is in exactly one list.
+ */
+export const DeleteCardsOutputSchema = z.object({
+  /** The deck, with how many cards it has now. */
+  deck: z.object({
+    id: IdSchema,
+    title: z.string(),
+    url: z.url(),
+    cardCount: z.number().int().nonnegative(),
+  }),
+  /** The cards deleted, as they were, in the order asked for. */
+  deleted: z.array(DeckCardSchema).max(CARD_LIMITS.perBatch),
+  /** Ids that are not in the deck: already deleted, or never there. */
+  notFound: z.array(IdSchema).max(CARD_LIMITS.perBatch),
+  /** Ids in the deck left alone because Deck Club stopped part-way; safe to ask again. */
+  notDeleted: z.array(IdSchema).max(CARD_LIMITS.perBatch),
+});
+export type DeleteCardsOutput = z.infer<typeof DeleteCardsOutputSchema>;
 
 /** `get_due_cards` arguments: the next cards in session order, within daily limits (spec 6). */
 export const GetDueCardsToolInputSchema = z.object({
