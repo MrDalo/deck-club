@@ -13,14 +13,17 @@ async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({ bodyLimit: 4_194_304 }),
-    {
-      logger,
-    },
+    { logger },
   );
   app.enableShutdownHooks();
 
   await app.listen({ port: env.MCP_PORT, host: '0.0.0.0' });
-  logger.log({ evt: 'process.started', port: env.MCP_PORT, api: env.API_INTERNAL_URL });
+  logger.log({
+    evt: 'process.started',
+    port: env.MCP_PORT,
+    resource: env.MCP_PUBLIC_URL,
+    api: env.API_INTERNAL_URL,
+  });
 }
 
 bootstrap().catch((error: unknown) => {
