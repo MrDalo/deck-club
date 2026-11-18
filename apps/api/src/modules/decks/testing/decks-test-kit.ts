@@ -1,4 +1,5 @@
 import type { Clock, IdGenerator } from '../../../common/time-and-ids.js';
+import { CardSearchService } from '../application/card-search.service.js';
 import { CardService } from '../application/card.service.js';
 import { DeckService } from '../application/deck.service.js';
 import { InMemoryDeckStore } from '../infrastructure/memory/in-memory-repositories.js';
@@ -36,6 +37,7 @@ export function createDecksTestKit(): {
   clock: AdvanceableClock;
   deckService: DeckService;
   cardService: CardService;
+  cardSearchService: CardSearchService;
 } {
   const store = new InMemoryDeckStore();
   const clock = new AdvanceableClock();
@@ -45,5 +47,6 @@ export function createDecksTestKit(): {
     clock,
     deckService: new DeckService(store.deckRepository, clock, ids),
     cardService: new CardService(store.deckRepository, store.cardRepository, clock, ids),
+    cardSearchService: new CardSearchService(store.deckRepository, store.cardRepository),
   };
 }

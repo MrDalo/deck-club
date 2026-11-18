@@ -19,6 +19,7 @@ import {
 import type { AuthenticatedUser } from '../../../common/auth/access-token-verifier.js';
 import { AuthGuard } from '../../../common/auth/auth.guard.js';
 import { CurrentUser } from '../../../common/auth/current-user.decorator.js';
+import { Idempotent } from '../../../common/idempotency/idempotency.interceptor.js';
 import { parseBody, parseId } from '../../../common/http/parse-input.js';
 import { deckNotFound } from '../application/deck-access.js';
 import { DeckService } from '../application/deck.service.js';
@@ -35,6 +36,7 @@ export class DecksController {
   }
 
   @Post()
+  @Idempotent()
   async create(@CurrentUser() user: AuthenticatedUser, @Body() body: unknown): Promise<Deck> {
     return this.deckService.create(user.id, parseBody(CreateDeckInputSchema, body));
   }

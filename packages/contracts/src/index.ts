@@ -1,9 +1,13 @@
 export * from './auth.js';
 export * from './card.js';
+export * from './card-search.js';
 export * from './deck.js';
 export * from './errors.js';
 export * from './health.js';
 export * from './http.js';
+export * from './mcp-prompts.js';
+export * from './mcp-resources.js';
 export * from './mcp-tools.js';
+export * from './oauth.js';
 export * from './study.js';
 export { IdSchema, LanguageSchema, PLAIN_TEXT_MESSAGE, TagListSchema } from './text.js';

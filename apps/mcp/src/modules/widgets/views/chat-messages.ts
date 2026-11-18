@@ -57,3 +57,32 @@ export function askToSearch(query: string): string {
 export function askForCardsFromNotes(deckTitle: string): string {
   return `Turn my notes into cards for my "${deckTitle}" deck. I will paste them next.`;
 }
+
+/**
+ * For hosts that do not let a view call the server itself.
+ * @param front - the card's front as it is now
+ * @returns the request to undo the assistant's edit
+ */
+export function askToUndoCardChange(front: string): string {
+  return `Change my card "${front}" back to how it was before your edit.`;
+}
+
+/**
+ * For hosts that do not let a view call the server itself.
+ * @param deckTitle - the deck the cards were deleted from
+ * @param count - how many cards were deleted
+ * @returns the request to add the deleted cards back
+ */
+export function askToAddBack(deckTitle: string, count: number): string {
+  return `Add the ${count === 1 ? 'card' : `${count} cards`} you just deleted back to my "${deckTitle}" deck as new cards.`;
+}
+
+/**
+ * After Deck Club stopped part-way through a delete.
+ * @param deckTitle - the deck
+ * @param count - how many cards were left alone
+ * @returns the request to delete the rest
+ */
+export function askToDeleteRest(deckTitle: string, count: number): string {
+  return `Try again to delete the ${count === 1 ? 'card' : `${count} cards`} you could not delete from my "${deckTitle}" deck.`;
+}

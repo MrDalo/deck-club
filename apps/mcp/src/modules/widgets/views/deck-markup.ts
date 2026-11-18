@@ -65,16 +65,17 @@ export function renderDeck(detail: GetDeckOutput): string {
 
 /**
  * Adds the next page to the cards already on screen, so "Show more cards"
- * grows the list instead of replacing it.
- * @param shown - what the view shows now
+ * grows the list instead of replacing it. Whatever else the view shows
+ * (e.g. how many cards `add_cards` added) is kept.
+ * @param shown - what the view shows now: a `get_deck` page, or a result built on one
  * @param next - the next page, from the same deck
  * @returns both pages as one, with the newer deck summary and cursor
  */
-export function appendPage(shown: GetDeckOutput, next: GetDeckOutput): GetDeckOutput {
+export function appendPage<Shown extends GetDeckOutput>(shown: Shown, next: GetDeckOutput): Shown {
   return {
+    ...shown,
     deck: next.deck,
     cards: [...shown.cards, ...next.cards],
-    firstCardNumber: shown.firstCardNumber,
     nextCursor: next.nextCursor,
   };
 }

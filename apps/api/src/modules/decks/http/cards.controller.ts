@@ -21,6 +21,7 @@ import {
 import type { AuthenticatedUser } from '../../../common/auth/access-token-verifier.js';
 import { AuthGuard } from '../../../common/auth/auth.guard.js';
 import { CurrentUser } from '../../../common/auth/current-user.decorator.js';
+import { Idempotent } from '../../../common/idempotency/idempotency.interceptor.js';
 import { AppError } from '../../../common/errors/app-error.js';
 import { parseBody, parseId } from '../../../common/http/parse-input.js';
 import { provenanceFromHeaders } from '../../../common/http/provenance.js';
@@ -49,6 +50,7 @@ export class CardsController {
   }
 
   @Post()
+  @Idempotent()
   async create(
     @CurrentUser() user: AuthenticatedUser,
     @Param('deckId') deckId: string,
@@ -67,6 +69,7 @@ export class CardsController {
 
   /** Up to 100 cards in one atomic call; what the `add_cards` MCP tool uses. */
   @Post('batch')
+  @Idempotent()
   async createMany(
     @CurrentUser() user: AuthenticatedUser,
     @Param('deckId') deckId: string,

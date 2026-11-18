@@ -1,4 +1,10 @@
 import 'reflect-metadata';
+import {
+  type Card,
+  CLIENT_NAME_HEADER,
+  IDEMPOTENCY_KEY_HEADER,
+  IDEMPOTENT_REPLAYED_HEADER,
+} from '@deck-club/contracts';
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
 import { Test } from '@nestjs/testing';
@@ -47,20 +53,76 @@ const DECK_NOT_FOUND = {
   traceId: 'trace-test',
 };
 
+/** What the fake API's writes changed in {@link API_DECK}, until a test resets it. */
+type DeckWrites = {
+  /** Cards add_cards wrote. */
+  added: Card[];
+  /** Cards update_card changed, by id. */
+  updated: Map<string, Card>;
+  /** Ids delete_cards deleted. */
+  deleted: Set<string>;
+};
+
+/** The deck's cards as the fake API holds them now: seeded, added, edited, without the deleted. */
+const cardsNow = (writes: DeckWrites): Card[] =>
+  [...API_CARDS, ...writes.added]
+    .filter((card) => !writes.deleted.has(card.id))
+    .map((card) => writes.updated.get(card.id) ?? card);
+
+const CARD_NOT_FOUND = {
+  type: 'about:blank',
+  title: 'CARD_NOT_FOUND',
+  status: 404,
+  code: 'CARD_NOT_FOUND',
+  detail: 'No card with that id exists in this deck.',
+  traceId: 'trace-test',
+};
+
 /**
  * The core API's deck endpoints as the fake answers them: Ana owns
- * {@link API_DECK}; anyone else gets an empty library and 404 for it.
+ * {@link API_DECK}; anyone else gets an empty library and 404 for it. What
+ * the writes change is kept in `writes` until the test resets it.
  */
-function deckEndpoints(url: URL, init: RequestInit): Response {
+function deckEndpoints(url: URL, init: RequestInit, writes: DeckWrites): Response {
   const isAna = new Headers(init.headers).get('authorization') === `Bearer ${TOKENS.ana}`;
   if (url.pathname === '/cards/search') return searchEndpoint(url, isAna);
   if (url.pathname === '/decks' && init.method === 'POST') return createDeckEndpoint(init);
   if (url.pathname === '/decks') return Response.json({ decks: isAna ? [API_DECK] : [] });
   if (!isAna || !url.pathname.startsWith(`/decks/${API_DECK.id}`))
     return Response.json(DECK_NOT_FOUND, { status: 404 });
+  if (url.pathname.endsWith('/cards/batch') && init.method === 'POST')
+    return addCardsEndpoint(init, writes.added);
+  if (init.method === 'PATCH') return updateCardEndpoint(url, init, writes);
+  if (init.method === 'DELETE') return deleteCardEndpoint(url, writes);
   return url.pathname.endsWith('/cards')
-    ? Response.json({ cards: API_CARDS })
-    : Response.json(API_DECK);
+    ? Response.json({ cards: cardsNow(writes) })
+    : Response.json({ ...API_DECK, cardCount: cardsNow(writes).length });
+}
+
+/**
+ * `DELETE /decks/:deckId/cards/:cardId` as the fake answers it: 204, and
+ * the card is gone from every later read; a card not there is 404.
+ */
+function deleteCardEndpoint(url: URL, writes: DeckWrites): Response {
+  const cardId = url.pathname.split('/').at(-1) ?? '';
+  if (!cardsNow(writes).some((card) => card.id === cardId))
+    return Response.json(CARD_NOT_FOUND, { status: 404 });
+  writes.deleted.add(cardId);
+  return new Response(null, { status: 204 });
+}
+
+/**
+ * `PATCH /decks/:deckId/cards/:cardId` as the fake answers it: the given
+ * fields replace the card's, the rest is kept; an unknown card is 404.
+ */
+function updateCardEndpoint(url: URL, init: RequestInit, writes: DeckWrites): Response {
+  const cardId = url.pathname.split('/').at(-1);
+  const current = cardsNow(writes).find((card) => card.id === cardId);
+  if (current === undefined) return Response.json(CARD_NOT_FOUND, { status: 404 });
+  const patch = jsonBody(init) as Partial<Pick<Card, 'front' | 'back' | 'extra' | 'tags'>>;
+  const updated = { ...current, ...patch };
+  writes.updated.set(current.id, updated);
+  return Response.json(updated);
 }
 
 /**
@@ -95,14 +157,106 @@ function createDeckEndpoint(init: RequestInit): Response {
   });
 }
 
+/**
+ * `POST /decks/:deckId/cards/batch` as the fake answers it: the cards it was
+ * sent, with ids, stamped with the AI client the MCP server named.
+ */
+function addCardsEndpoint(init: RequestInit, added: Card[]): Response {
+  const body = jsonBody(init) as {
+    cards: Pick<Card, 'type' | 'front' | 'back' | 'extra' | 'tags'>[];
+  };
+  const clientName = new Headers(init.headers).get(CLIENT_NAME_HEADER);
+  const cards = body.cards.map((card, index) =>
+    testCard({
+      ...card,
+      id: `00000000-0000-4000-8000-${String(800 + added.length + index + 1).padStart(12, '0')}`,
+      deckId: API_DECK.id,
+      provenance: { source: 'mcp', clientName },
+    }),
+  );
+  added.push(...cards);
+  return Response.json({ cards }, { status: 201 });
+}
+
+/** A write the fake API answered, kept per user and idempotency key. */
+type AnsweredWrite = { request: string; status: number; body: string };
+
+/**
+ * The API's idempotency keys as the fake honours them (ADR 0009): per token
+ * and key, the same write again gets the first answer, marked as a replay;
+ * another write with the key is refused. Failed writes are not kept.
+ */
+async function answerOnce(write: {
+  url: URL;
+  init: RequestInit;
+  key: string;
+  answered: Map<string, AnsweredWrite>;
+  run: () => Response;
+}): Promise<Response> {
+  const { url, init, key, answered } = write;
+  const slot = `${new Headers(init.headers).get('authorization')} ${key}`;
+  const request = `${url.pathname} ${typeof init.body === 'string' ? init.body : ''}`;
+  const earlier = answered.get(slot);
+  if (earlier?.request === request)
+    return new Response(earlier.body, {
+      status: earlier.status,
+      headers: { 'content-type': 'application/json', [IDEMPOTENT_REPLAYED_HEADER]: 'true' },
+    });
+  if (earlier !== undefined)
+    return Response.json(
+      {
+        type: 'about:blank',
+        title: 'IDEMPOTENCY_KEY_REUSED',
+        status: 422,
+        code: 'IDEMPOTENCY_KEY_REUSED',
+        detail: 'This Idempotency-Key was already used for a different request.',
+        traceId: 'trace-test',
+      },
+      { status: 422 },
+    );
+  const response = write.run();
+  if (response.ok)
+    answered.set(slot, { request, status: response.status, body: await response.clone().text() });
+  return response;
+}
+
 /** A running MCP server with its fakes, for driving over real HTTP. */
 export type TestServer = {
   app: NestFastifyApplication;
   endpoint: URL;
   origin: string;
   authorizationServer: FakeAuthorizationServer;
-  api: { healthy: boolean; requests: URL[]; bodies: unknown[] };
+  /**
+   * The fake API: `addedCards` holds what add_cards wrote, `updatedCards`
+   * what update_card changed, `deletedCards` what delete_cards deleted,
+   * `idempotencyKeys` the key of every write (null
+   * without one) and `answered` the writes it remembers per key; reset them
+   * with {@link resetWrites} after a test.
+   */
+  api: {
+    healthy: boolean;
+    requests: URL[];
+    bodies: unknown[];
+    addedCards: Card[];
+    updatedCards: Map<string, Card>;
+    deletedCards: Set<string>;
+    idempotencyKeys: (string | null)[];
+    answered: Map<string, AnsweredWrite>;
+  };
 };
+
+/**
+ * Forgets every write the fake API made, so the next test sees the seeded
+ * deck as it was.
+ * @param server - the test server
+ */
+export function resetWrites(server: TestServer): void {
+  server.api.addedCards.length = 0;
+  server.api.updatedCards.clear();
+  server.api.deletedCards.clear();
+  server.api.idempotencyKeys.length = 0;
+  server.api.answered.clear();
+}
 
 const inAnHour = (): number => Math.floor(Date.now() / 1000) + 3600;
 
@@ -121,13 +275,34 @@ export async function startTestServer(): Promise<TestServer> {
     })
     .accept(TOKENS.ben, { userId: 'user-ben', clientId: null, expiresAt: inAnHour() });
   const authorizationServer = new FakeAuthorizationServer();
-  const api = { healthy: true, requests: [] as URL[], bodies: [] as unknown[] };
+  const api = {
+    healthy: true,
+    requests: [] as URL[],
+    bodies: [] as unknown[],
+    addedCards: [] as Card[],
+    updatedCards: new Map<string, Card>(),
+    deletedCards: new Set<string>(),
+    idempotencyKeys: [] as (string | null)[],
+    answered: new Map<string, AnsweredWrite>(),
+  };
   const apiFetch: FetchFunction = (url, init) => {
     api.requests.push(url);
     if (init.body !== undefined) api.bodies.push(jsonBody(init));
     if (!api.healthy) return Promise.reject(new TypeError('fetch failed'));
-    if (url.pathname.startsWith('/decks') || url.pathname === '/cards/search')
-      return Promise.resolve(deckEndpoints(url, init));
+    if (url.pathname.startsWith('/decks') || url.pathname === '/cards/search') {
+      const write = (): Response =>
+        deckEndpoints(url, init, {
+          added: api.addedCards,
+          updated: api.updatedCards,
+          deleted: api.deletedCards,
+        });
+      if (init.method !== 'POST') return Promise.resolve(write());
+      const key = new Headers(init.headers).get(IDEMPOTENCY_KEY_HEADER);
+      api.idempotencyKeys.push(key);
+      return key === null
+        ? Promise.resolve(write())
+        : answerOnce({ url, init, key, answered: api.answered, run: write });
+    }
     return Promise.resolve(Response.json({ status: 'ok', service: 'api', version: 'test' }));
   };
 

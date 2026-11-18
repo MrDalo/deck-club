@@ -1,14 +1,22 @@
-import { MCP_PROMPT_NAMES, MCP_TOOL_NAMES } from '@deck-club/contracts';
+import {
+  DeleteCardsOutputSchema,
+  MCP_PROMPT_NAMES,
+  MCP_TOOL_NAMES,
+  UpdateCardOutputSchema,
+} from '@deck-club/contracts';
 import type { Client } from '@modelcontextprotocol/client';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { textOf } from '../src/common/mcp/testing/mcp-test-client.js';
 import { WIDGET_URIS } from '../src/common/mcp/widgets.js';
 import { DecksService } from '../src/modules/decks/application/decks.service.js';
+import { undoArguments } from '../src/modules/widgets/views/card-updated-markup.js';
+import { addBackArguments } from '../src/modules/widgets/views/cards-deleted-markup.js';
 import {
   API_CARDS,
   API_DECK,
   connectClient,
   postJsonRpc,
+  resetWrites,
   startTestServer,
   type TestServer,
   TOKENS,
@@ -25,6 +33,7 @@ beforeAll(async () => {
 
 afterEach(async () => {
   vi.restoreAllMocks();
+  resetWrites(server);
   await client?.close();
   client = undefined;
 });
@@ -231,6 +240,157 @@ describe.each(['modern', 'legacy'] as const)('MCP over Streamable HTTP, %s era',
     expect((view.contents[0] as { text: string }).text).toContain('Next: fill it with cards');
   });
 
+  it('adds cards through the API, stamped with the AI client, for the model and for the view', async () => {
+    const result = await (
+      await connect(era, 'claude-ai')
+    ).callTool({
+      name: 'add_cards',
+      arguments: {
+        deckId: API_DECK.id,
+        cards: [
+          { front: 'comer', back: 'to eat' },
+          { type: 'reversible', front: 'vivir', back: 'to live', tags: ['Verbs'] },
+        ],
+      },
+    });
+
+    expect(result.isError).toBeFalsy();
+    expect(textOf(result)).toMatch(
+      new RegExp(
+        `^Added 2 cards to the deck "Spanish verbs" \\(id: ${API_DECK.id}\\); it now has 32 cards\\.`,
+      ),
+    );
+    expect(result.structuredContent).toMatchObject({
+      deck: { id: API_DECK.id, cardCount: 32 },
+      cards: [
+        { front: 'comer', type: 'basic', addedBy: 'Claude' },
+        { front: 'vivir', type: 'reversible', tags: ['verbs'], addedBy: 'Claude' },
+      ],
+      firstCardNumber: 31,
+      nextCursor: null,
+      addedCount: 2,
+    });
+    const batch = server.api.requests.findLast((url) => url.pathname.endsWith('/cards/batch'));
+    expect(batch?.pathname).toBe(`/decks/${API_DECK.id}/cards/batch`);
+    expect(server.api.bodies.at(-1)).toEqual({
+      cards: [
+        { type: 'basic', front: 'comer', back: 'to eat', extra: '', tags: [] },
+        { type: 'reversible', front: 'vivir', back: 'to live', extra: '', tags: ['verbs'] },
+      ],
+    });
+  });
+
+  it('serves the cards added view the add_cards tool links to', async () => {
+    const connected = await connect(era);
+    const addCards = (await connected.listTools()).tools.find((tool) => tool.name === 'add_cards');
+
+    const view = await connected.readResource({
+      uri: (addCards?._meta?.ui as { resourceUri: string }).resourceUri,
+    });
+
+    expect(view.contents[0]).toMatchObject({
+      uri: 'ui://deck-club/cards-added.html',
+      mimeType: 'text/html;profile=mcp-app',
+    });
+    expect((view.contents[0] as { text: string }).text).toContain('Next: learn them');
+  });
+
+  it('edits a card through the API, for the model and for the view', async () => {
+    const [card] = API_CARDS;
+
+    const result = await (
+      await connect(era)
+    ).callTool({
+      name: 'update_card',
+      arguments: { deckId: API_DECK.id, cardId: card!.id, back: 'to speak', tags: ['Verbs'] },
+    });
+
+    expect(result.isError).toBeFalsy();
+    expect(textOf(result).split('\n').slice(0, 3)).toEqual([
+      `Updated the card ${card!.id} in the deck "Spanish verbs" (id: ${API_DECK.id}). The user's study progress on it is kept.`,
+      '- back: "back 1" → "to speak"',
+      '- tags: (no tags) → verbs',
+    ]);
+    expect(result.structuredContent).toMatchObject({
+      deck: { id: API_DECK.id, title: 'Spanish verbs' },
+      card: {
+        id: card!.id,
+        front: 'front 1',
+        back: 'to speak',
+        tags: ['verbs'],
+        addedBy: 'Claude',
+      },
+      previous: { back: 'back 1', tags: [] },
+      changedFields: ['back', 'tags'],
+    });
+    const patch = server.api.requests.at(-1);
+    expect(patch?.pathname).toBe(`/decks/${API_DECK.id}/cards/${card!.id}`);
+    expect(server.api.bodies.at(-1)).toEqual({ back: 'to speak', tags: ['verbs'] });
+  });
+
+  it('serves the card updated view the update_card tool links to', async () => {
+    const connected = await connect(era);
+    const update = (await connected.listTools()).tools.find((tool) => tool.name === 'update_card');
+
+    const view = await connected.readResource({
+      uri: (update?._meta?.ui as { resourceUri: string }).resourceUri,
+    });
+
+    expect(view.contents[0]).toMatchObject({
+      uri: 'ui://deck-club/card-updated.html',
+      mimeType: 'text/html;profile=mcp-app',
+    });
+    expect((view.contents[0] as { text: string }).text).toContain('Undo this change');
+  });
+
+  it('deletes cards through the API, for the model and for the view', async () => {
+    const [first, second] = API_CARDS;
+
+    const result = await (
+      await connect(era)
+    ).callTool({
+      name: 'delete_cards',
+      arguments: { deckId: API_DECK.id, cardIds: [first!.id, second!.id] },
+    });
+
+    expect(result.isError).toBeFalsy();
+    expect(textOf(result)).toMatch(
+      new RegExp(
+        `^Deleted 2 cards from the deck "Spanish verbs" \\(id: ${API_DECK.id}\\); it now has 28 cards\\.`,
+      ),
+    );
+    expect(result.structuredContent).toMatchObject({
+      deck: { id: API_DECK.id, cardCount: 28 },
+      deleted: [
+        { id: first!.id, front: 'front 1', addedBy: 'Claude' },
+        { id: second!.id, front: 'front 2' },
+      ],
+      notFound: [],
+      notDeleted: [],
+    });
+    const deletes = server.api.requests.slice(-2).map((url) => url.pathname);
+    expect(deletes).toEqual([
+      `/decks/${API_DECK.id}/cards/${first!.id}`,
+      `/decks/${API_DECK.id}/cards/${second!.id}`,
+    ]);
+    expect([...server.api.deletedCards]).toEqual([first!.id, second!.id]);
+  });
+
+  it('serves the cards deleted view the delete_cards tool links to', async () => {
+    const connected = await connect(era);
+    const remove = (await connected.listTools()).tools.find((tool) => tool.name === 'delete_cards');
+
+    const view = await connected.readResource({
+      uri: (remove?._meta?.ui as { resourceUri: string }).resourceUri,
+    });
+
+    expect(view.contents[0]).toMatchObject({
+      uri: 'ui://deck-club/cards-deleted.html',
+      mimeType: 'text/html;profile=mcp-app',
+    });
+    expect((view.contents[0] as { text: string }).text).toContain('Add them back as new cards');
+  });
+
   it('answers a tool that is not built yet with a REJECTED tool result', async () => {
     const result = await (await connect(era)).callTool({ name: 'get_stats', arguments: {} });
 
@@ -359,6 +519,257 @@ describe('create_deck authorization', () => {
 
     expect(response.status).toBe(401);
     expect(server.api.bodies).toHaveLength(before);
+  });
+});
+
+describe('idempotent writes over HTTP', () => {
+  const BATCH = {
+    deckId: API_DECK.id,
+    cards: [{ front: 'comer', back: 'to eat' }],
+    idempotencyKey: 'batch-key-0001',
+  };
+
+  it('sends add_cards’ idempotencyKey to the API, which adds a retried batch once', async () => {
+    const connected = await connectClient(server.endpoint, { token: TOKENS.ana, era: 'modern' });
+
+    const first = await connected.callTool({ name: 'add_cards', arguments: BATCH });
+    const retry = await connected.callTool({ name: 'add_cards', arguments: BATCH });
+
+    expect(server.api.idempotencyKeys).toEqual(['batch-key-0001', 'batch-key-0001']);
+    expect(server.api.addedCards).toHaveLength(1);
+    expect(textOf(first)).toMatch(/^Added 1 card to the deck "Spanish verbs"/);
+    expect(textOf(retry)).toMatch(
+      /^Already done: an earlier add_cards call with this idempotencyKey added these cards, so none were added twice\.\nAdded 1 card/,
+    );
+    expect(retry.structuredContent).toEqual(first.structuredContent);
+    expect(server.api.bodies.at(-1)).not.toHaveProperty('idempotencyKey');
+    await connected.close();
+  });
+
+  it('relays the API’s refusal of a key reused for other cards, in the tool’s words', async () => {
+    const connected = await connectClient(server.endpoint, { token: TOKENS.ana, era: 'modern' });
+    await connected.callTool({ name: 'add_cards', arguments: BATCH });
+
+    const result = await connected.callTool({
+      name: 'add_cards',
+      arguments: { ...BATCH, cards: [{ front: 'vivir', back: 'to live' }] },
+    });
+
+    expect(textOf(result)).toBe(
+      'REJECTED: IDEMPOTENCY_KEY_REUSED. This idempotencyKey was already used for a different call. Use a new key for a new add_cards call; reuse a key only to retry exactly the same call.',
+    );
+    expect(server.api.addedCards).toHaveLength(1);
+    await connected.close();
+  });
+
+  it('sends no key when the AI gives none, so the API writes as before', async () => {
+    const connected = await connectClient(server.endpoint, { token: TOKENS.ana, era: 'modern' });
+    const { idempotencyKey: _none, ...withoutKey } = BATCH;
+
+    await connected.callTool({ name: 'add_cards', arguments: withoutKey });
+    await connected.callTool({ name: 'add_cards', arguments: withoutKey });
+
+    expect(server.api.idempotencyKeys).toEqual([null, null]);
+    expect(server.api.addedCards).toHaveLength(2);
+    await connected.close();
+  });
+
+  it('sends create_deck’s idempotencyKey as a header, never in the deck', async () => {
+    const connected = await connectClient(server.endpoint, { token: TOKENS.ana, era: 'modern' });
+    const call = {
+      name: 'create_deck',
+      arguments: { title: 'Biology', idempotencyKey: 'create-key-0001' },
+    };
+
+    const first = await connected.callTool(call);
+    const retry = await connected.callTool(call);
+
+    expect(server.api.idempotencyKeys).toEqual(['create-key-0001', 'create-key-0001']);
+    expect(server.api.bodies.at(-1)).toEqual({
+      title: 'Biology',
+      description: '',
+      language: 'en',
+      tags: [],
+    });
+    expect(textOf(retry)).toMatch(
+      /^Already done: an earlier create_deck call with this idempotencyKey created this deck/,
+    );
+    expect(retry.structuredContent).toEqual(first.structuredContent);
+    await connected.close();
+  });
+});
+
+describe('update_card authorization', () => {
+  const patchesSince = (before: number): URL[] =>
+    server.api.requests.slice(before).filter((url) => /\/cards\/[0-9a-f-]{36}$/.test(url.pathname));
+
+  it('refuses another user’s deck before anything is written', async () => {
+    const ben = await connectClient(server.endpoint, { token: TOKENS.ben, era: 'modern' });
+    const before = server.api.requests.length;
+
+    const result = await ben.callTool({
+      name: 'update_card',
+      arguments: { deckId: API_DECK.id, cardId: API_CARDS[0]!.id, back: 'mine now' },
+    });
+
+    expect(textOf(result)).toBe(
+      'REJECTED: DECK_NOT_FOUND. No deck with that id exists in your library.',
+    );
+    expect(patchesSince(before)).toEqual([]);
+    expect(server.api.updatedCards.size).toBe(0);
+    await ben.close();
+  });
+
+  it('refuses a card that is not in the deck before anything is written', async () => {
+    const connected = await connectClient(server.endpoint, { token: TOKENS.ana, era: 'modern' });
+    const before = server.api.requests.length;
+
+    const result = await connected.callTool({
+      name: 'update_card',
+      arguments: { deckId: API_DECK.id, cardId: API_DECK.id, back: 'x' },
+    });
+
+    expect(textOf(result)).toMatch(/^REJECTED: CARD_NOT_FOUND\./);
+    expect(patchesSince(before)).toEqual([]);
+    await connected.close();
+  });
+
+  it('undoes an edit with the arguments its view sends, card as it was', async () => {
+    const connected = await connectClient(server.endpoint, { token: TOKENS.ana, era: 'modern' });
+    const cardId = API_CARDS[1]!.id;
+    const edit = await connected.callTool({
+      name: 'update_card',
+      arguments: { deckId: API_DECK.id, cardId, front: 'changed', extra: 'note' },
+    });
+
+    const undo = await connected.callTool({
+      name: 'update_card',
+      arguments: undoArguments(UpdateCardOutputSchema.parse(edit.structuredContent)),
+    });
+
+    expect(undo.structuredContent).toMatchObject({
+      card: { front: 'front 2', extra: '' },
+      previous: { front: 'changed', extra: 'note' },
+      changedFields: ['front', 'extra'],
+    });
+    await connected.close();
+  });
+});
+
+describe('delete_cards over HTTP', () => {
+  const deletesSince = (before: number): URL[] =>
+    server.api.requests.slice(before).filter((url) => /\/cards\/[0-9a-f-]{36}$/.test(url.pathname));
+
+  it('refuses another user’s deck before anything is deleted', async () => {
+    const ben = await connectClient(server.endpoint, { token: TOKENS.ben, era: 'modern' });
+    const before = server.api.requests.length;
+
+    const result = await ben.callTool({
+      name: 'delete_cards',
+      arguments: { deckId: API_DECK.id, cardIds: [API_CARDS[0]!.id] },
+    });
+
+    expect(textOf(result)).toBe(
+      'REJECTED: DECK_NOT_FOUND. No deck with that id exists in your library.',
+    );
+    expect(deletesSince(before)).toEqual([]);
+    expect(server.api.deletedCards.size).toBe(0);
+    await ben.close();
+  });
+
+  it('deletes nothing for an id that is not in the deck, and says so', async () => {
+    const connected = await connectClient(server.endpoint, { token: TOKENS.ana, era: 'modern' });
+    const before = server.api.requests.length;
+
+    const result = await connected.callTool({
+      name: 'delete_cards',
+      arguments: { deckId: API_DECK.id, cardIds: [API_DECK.id] },
+    });
+
+    expect(textOf(result)).toMatch(/^No cards were deleted from the deck "Spanish verbs"/);
+    expect(deletesSince(before)).toEqual([]);
+    await connected.close();
+  });
+
+  it('adds deleted cards back, once, with the arguments its view sends', async () => {
+    const connected = await connectClient(server.endpoint, { token: TOKENS.ana, era: 'modern' });
+    const removed = await connected.callTool({
+      name: 'delete_cards',
+      arguments: { deckId: API_DECK.id, cardIds: [API_CARDS[2]!.id, API_CARDS[3]!.id] },
+    });
+    // As the view does: the arguments are built anew on every click.
+    const click = (): ReturnType<Client['callTool']> =>
+      connected.callTool({
+        name: 'add_cards',
+        arguments: addBackArguments(DeleteCardsOutputSchema.parse(removed.structuredContent)),
+      });
+
+    const first = await click();
+    const secondClick = await click();
+
+    expect(first.structuredContent).toMatchObject({
+      addedCount: 2,
+      cards: [{ front: 'front 3' }, { front: 'front 4' }],
+    });
+    expect(textOf(secondClick)).toMatch(/^Already done: an earlier add_cards call/);
+    expect(server.api.addedCards.map((card) => card.front)).toEqual(['front 3', 'front 4']);
+    await connected.close();
+  });
+});
+
+describe('add_cards authorization', () => {
+  it('refuses another user’s deck before anything is written', async () => {
+    const ben = await connectClient(server.endpoint, { token: TOKENS.ben, era: 'modern' });
+    const before = server.api.requests.length;
+
+    const result = await ben.callTool({
+      name: 'add_cards',
+      arguments: { deckId: API_DECK.id, cards: [{ front: 'hola', back: 'hello' }] },
+    });
+
+    expect(textOf(result)).toBe(
+      'REJECTED: DECK_NOT_FOUND. No deck with that id exists in your library.',
+    );
+    expect(
+      server.api.requests.slice(before).some((url) => url.pathname.endsWith('/cards/batch')),
+    ).toBe(false);
+    expect(server.api.addedCards).toEqual([]);
+    await ben.close();
+  });
+
+  it('rejects an invalid card before the batch reaches the API', async () => {
+    const connected = await connectClient(server.endpoint, { token: TOKENS.ana, era: 'modern' });
+    const before = server.api.bodies.length;
+
+    const result = await connected.callTool({
+      name: 'add_cards',
+      arguments: { deckId: API_DECK.id, cards: [{ front: '<script>x</script>', back: 'y' }] },
+    });
+
+    expect(result.isError).toBe(true);
+    expect(server.api.bodies).toHaveLength(before);
+    await connected.close();
+  });
+
+  it('writes nothing and relays UPSTREAM_UNAVAILABLE when the API cannot be reached', async () => {
+    const connected = await connectClient(server.endpoint, { token: TOKENS.ana, era: 'modern' });
+    const before = server.api.requests.length;
+    server.api.healthy = false;
+
+    try {
+      const result = await connected.callTool({
+        name: 'add_cards',
+        arguments: { deckId: API_DECK.id, cards: [{ front: 'hola', back: 'hello' }] },
+      });
+
+      expect(textOf(result)).toMatch(/^REJECTED: UPSTREAM_UNAVAILABLE\./);
+      expect(
+        server.api.requests.slice(before).some((url) => url.pathname.endsWith('/cards/batch')),
+      ).toBe(false);
+    } finally {
+      server.api.healthy = true;
+      await connected.close();
+    }
   });
 });
 

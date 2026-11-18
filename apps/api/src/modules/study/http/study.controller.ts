@@ -21,6 +21,7 @@ import {
 import type { AuthenticatedUser } from '../../../common/auth/access-token-verifier.js';
 import { AuthGuard } from '../../../common/auth/auth.guard.js';
 import { CurrentUser } from '../../../common/auth/current-user.decorator.js';
+import { Idempotent } from '../../../common/idempotency/idempotency.interceptor.js';
 import { parseBody } from '../../../common/http/parse-input.js';
 import { provenanceFromHeaders } from '../../../common/http/provenance.js';
 import { ReviewService } from '../application/review.service.js';
@@ -51,6 +52,7 @@ export class StudyController {
   }
 
   @Post('reviews')
+  @Idempotent()
   async submit(
     @CurrentUser() user: AuthenticatedUser,
     @Body() body: unknown,
@@ -65,6 +67,7 @@ export class StudyController {
 
   @Post('reviews/undo')
   @HttpCode(200)
+  @Idempotent()
   async undo(@CurrentUser() user: AuthenticatedUser): Promise<UndoResult> {
     return this.reviews.undoLast(user.id);
   }

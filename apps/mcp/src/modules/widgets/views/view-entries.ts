@@ -11,4 +11,7 @@ export const VIEW_ENTRIES: Readonly<Partial<Record<WidgetKey, string>>> = {
   deck: 'src/modules/widgets/views/browser/deck.view.ts',
   searchResults: 'src/modules/widgets/views/browser/search-results.view.ts',
   deckCreated: 'src/modules/widgets/views/browser/deck-created.view.ts',
+  cardsAdded: 'src/modules/widgets/views/browser/cards-added.view.ts',
+  cardUpdated: 'src/modules/widgets/views/browser/card-updated.view.ts',
+  cardsDeleted: 'src/modules/widgets/views/browser/cards-deleted.view.ts',
 };

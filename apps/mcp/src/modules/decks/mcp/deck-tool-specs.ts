@@ -1,7 +1,9 @@
 import {
+  AddCardsOutputSchema,
   AddCardsToolInputSchema,
   CreateDeckOutputSchema,
   CreateDeckToolInputSchema,
+  DeleteCardsOutputSchema,
   DeleteCardsToolInputSchema,
   GetDeckOutputSchema,
   GetDeckToolInputSchema,
@@ -11,6 +13,7 @@ import {
   MakeCardsPromptArgsSchema,
   SearchCardsOutputSchema,
   SearchCardsToolInputSchema,
+  UpdateCardOutputSchema,
   UpdateCardToolInputSchema,
 } from '@deck-club/contracts';
 import type { StandardSchemaWithJSON } from '@modelcontextprotocol/server';
@@ -58,7 +61,7 @@ export const DECK_TOOLS = {
     name: 'create_deck',
     title: 'Create deck',
     description:
-      'Create a new private deck for the user. Call list_decks first and reuse a deck the user already has for the topic; create one only when none fits, and do not call this twice for one request. Give a short title, the language code of the card content and up to 10 lowercase tags. Returns the new deck id for add_cards and a link to share.',
+      'Create a new private deck for the user. Call list_decks first and reuse a deck the user already has for the topic; create one only when none fits. Give a short title, the language code of the card content and up to 10 lowercase tags. Send a new idempotencyKey (e.g. a UUID) with each new deck: if the call fails with UPSTREAM_UNAVAILABLE or times out, call again with the same arguments and key, and no second deck is made. Returns the new deck id for add_cards and a link to share.',
     inputSchema: CreateDeckToolInputSchema,
     outputSchema: CreateDeckOutputSchema,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
@@ -68,26 +71,31 @@ export const DECK_TOOLS = {
     name: 'add_cards',
     title: 'Add cards',
     description:
-      'Add 1 to 100 flashcards to a deck in one call. Write one fact per card with a short answer; prefer "reversible" for vocabulary. The result lists created cards, cards skipped as likely duplicates and invalid cards with reasons. Send an idempotencyKey so a retry never adds duplicates. Tell the user how many cards you added and share the deck link.',
+      'Add 1 to 100 flashcards to one of the user’s decks in one call; get the deck id from list_decks or create_deck. Check with search_cards first and leave out facts the user already has: this tool does not skip duplicates. Write one fact per card with a short answer, plain text only; use "reversible" for vocabulary. The call is all or nothing: if any card is invalid, nothing is added and the reply names the card to fix (cards.<index>.<field>). Send a new idempotencyKey (e.g. a UUID) with each batch: if the call fails with UPSTREAM_UNAVAILABLE or times out, call again with the same cards and key, and they are never added twice. Never repeat a call that succeeded. Returns the new card ids. Tell the user how many cards you added and share the deck link.',
     inputSchema: AddCardsToolInputSchema,
+    outputSchema: AddCardsOutputSchema,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
-    widgetUri: WIDGET_URIS.deck,
+    widgetUri: WIDGET_URIS.cardsAdded,
   },
   updateCard: {
     name: 'update_card',
     title: 'Update card',
     description:
-      'Edit a card’s front, back, extra or tags when the user asks to fix or improve it. The user keeps their study progress on the card.',
+      'Edit one card’s front, back, extra or tags when the user asks to fix or improve it; its type cannot change. Get the deck and card ids from get_deck, search_cards or add_cards; never invent them. Send only the fields to change and change only what the user asked for; tags, when sent, replace all of the card’s tags. Plain text only. The user keeps their study progress on the card. Returns each change as before → after: tell the user what you changed.',
     inputSchema: UpdateCardToolInputSchema,
+    outputSchema: UpdateCardOutputSchema,
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
+    widgetUri: WIDGET_URIS.cardUpdated,
   },
   deleteCards: {
     name: 'delete_cards',
     title: 'Delete cards',
     description:
-      'Delete cards from a deck; they can be restored in Deck Club for 30 days. Always ask the user to confirm first, naming the cards you are about to delete.',
+      'Delete 1 to 100 cards from one of the user’s decks. Always ask the user to confirm first, naming the cards (their fronts) you are about to delete: deleted cards cannot be restored yet, only added back as new cards with add_cards, which starts their study progress over. Get the deck and card ids from get_deck or search_cards; never invent them. Ids not in the deck are reported, not deleted. Returns the deleted cards in full: keep them in case the user wants them back.',
     inputSchema: DeleteCardsToolInputSchema,
+    outputSchema: DeleteCardsOutputSchema,
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
+    widgetUri: WIDGET_URIS.cardsDeleted,
   },
 } as const satisfies Record<string, ToolSpec<StandardSchemaWithJSON>>;
 

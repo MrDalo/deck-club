@@ -29,6 +29,24 @@ export const WIDGET_CATALOG: Readonly<Record<WidgetKey, WidgetDescription>> = {
     description:
       'A deck just created, as its index card in the library, with the next steps to fill it with cards.',
   },
+  cardsAdded: {
+    name: 'cards_added_view',
+    title: 'Cards added',
+    description:
+      'The cards just added to a deck, as ruled index cards marked with the assistant that wrote them, with the next steps.',
+  },
+  cardUpdated: {
+    name: 'card_updated_view',
+    title: 'Card updated',
+    description:
+      'One card just edited, as a ruled index card, with each change shown before and after and a button to undo it.',
+  },
+  cardsDeleted: {
+    name: 'cards_deleted_view',
+    title: 'Cards deleted',
+    description:
+      'The cards just deleted from a deck, what could not be deleted, and a button to add them back as new cards.',
+  },
   searchResults: {
     name: 'search_results_view',
     title: 'Search results',

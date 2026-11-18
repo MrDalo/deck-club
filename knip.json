@@ -18,7 +18,8 @@
       "project": ["src/**/*.ts", "test/**/*.ts"]
     },
     "apps/mcp": {
-      "project": ["src/**/*.ts", "test/**/*.ts"]
+      "entry": ["src/modules/widgets/views/browser/*.view.ts"],
+      "project": ["src/**/*.ts", "scripts/**/*.mjs", "test/**/*.ts"]
     },
     "apps/web": {
       "project": ["src/**/*.{ts,tsx,css}"]

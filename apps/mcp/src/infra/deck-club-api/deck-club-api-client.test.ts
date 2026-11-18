@@ -65,6 +65,85 @@ describe('DeckClubApiClient', () => {
     expect(init.headers).toMatchObject({ 'content-type': 'application/json' });
   });
 
+  it('sends no idempotency key with a plain request', async () => {
+    const { client, fetchFunction } = clientAnswering(Response.json(DECK));
+
+    await client.send({ method: 'GET', path: '/decks/x', schema: DeckSchema, credentials });
+
+    expect(fetchFunction.mock.calls[0]![1].headers).not.toHaveProperty('idempotency-key');
+  });
+
+  it('sends the AI’s idempotency key with a write, and reports a first answer as new', async () => {
+    const { client, fetchFunction } = clientAnswering(Response.json(DECK, { status: 201 }));
+
+    const answer = await client.sendIdempotent({
+      method: 'POST',
+      path: '/decks',
+      schema: DeckSchema,
+      body: { title: 'Spanish' },
+      credentials,
+      idempotencyKey: 'create-key-0001',
+    });
+
+    expect(answer).toEqual({ body: DECK, replayed: false });
+    expect(fetchFunction.mock.calls[0]![1].headers).toMatchObject({
+      'idempotency-key': 'create-key-0001',
+      authorization: 'Bearer token-ana',
+    });
+  });
+
+  it('reports the API’s replay of an earlier answer for the same key', async () => {
+    const { client } = clientAnswering(
+      Response.json(DECK, { status: 201, headers: { 'idempotent-replayed': 'true' } }),
+    );
+
+    const answer = await client.sendIdempotent({
+      method: 'POST',
+      path: '/decks',
+      schema: DeckSchema,
+      credentials,
+      idempotencyKey: 'create-key-0001',
+    });
+
+    expect(answer.replayed).toBe(true);
+  });
+
+  it('sends a write without the header when the AI gave no key', async () => {
+    const { client, fetchFunction } = clientAnswering(Response.json(DECK, { status: 201 }));
+
+    await client.sendIdempotent({
+      method: 'POST',
+      path: '/decks',
+      schema: DeckSchema,
+      credentials,
+      idempotencyKey: undefined,
+    });
+
+    expect(fetchFunction.mock.calls[0]![1].headers).not.toHaveProperty('idempotency-key');
+  });
+
+  it('relays the API’s refusal of a key reused for another request', async () => {
+    const problem = {
+      type: 'about:blank',
+      title: 'IDEMPOTENCY_KEY_REUSED',
+      status: 422,
+      code: 'IDEMPOTENCY_KEY_REUSED',
+      detail: 'This Idempotency-Key was already used for a different request.',
+      traceId: 'trace-9',
+    };
+    const { client } = clientAnswering(Response.json(problem, { status: 422 }));
+
+    await expect(
+      client.sendIdempotent({
+        method: 'POST',
+        path: '/decks',
+        schema: DeckSchema,
+        credentials,
+        idempotencyKey: 'create-key-0001',
+      }),
+    ).rejects.toMatchObject({ code: 'IDEMPOTENCY_KEY_REUSED' });
+  });
+
   it('sends no credentials to a public endpoint', async () => {
     const { client, fetchFunction } = clientAnswering(
       Response.json({ status: 'ok', service: 'api', version: 'dev' }),
