@@ -17,6 +17,8 @@ export const ERROR_CODES = {
   /** Undo was asked for, but there is no rating from today to take back. */
   NOTHING_TO_UNDO: 409,
   INTERNAL: 500,
+  /** The capability exists in the published interface (an MCP tool, resource or prompt) but is not built yet. */
+  NOT_IMPLEMENTED: 501,
   UPSTREAM_UNAVAILABLE: 503,
 } as const;
 export type ErrorCode = keyof typeof ERROR_CODES;

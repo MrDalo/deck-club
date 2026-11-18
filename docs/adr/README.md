@@ -12,3 +12,4 @@ their status line.
 | [0005](0005-supabase-auth-and-private-api.md)      | Supabase Auth, JWKS verification, and a private API behind the web forwarder | Accepted |
 | [0006](0006-next-intl.md)                          | next-intl for internationalisation                                           | Accepted |
 | [0007](0007-fsrs-via-ts-fsrs.md)                   | FSRS through ts-fsrs, behind a scheduler port                                | Proposed |
+| [0008](0008-mcp-sdk-v2-oauth-and-apps.md)          | MCP SDK v2 (stateless), Supabase as OAuth 2.1 server, MCP Apps views         | Accepted |

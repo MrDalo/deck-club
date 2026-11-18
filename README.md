@@ -5,21 +5,26 @@ together in clubs, and let your own AI assistant (Claude, ChatGPT, Codex) make
 the cards through Deck Club's MCP server. Deck Club never calls an AI itself
 and has no paid tier.
 
-> Status: **Phase 0 (foundation)** — decks and cards in the web app, the API
-> and over MCP. Spaced repetition is the next slice. See
-> [docs/roadmap.md](docs/roadmap.md).
+> Status: **Phase 1** — decks and cards in the web app and the API, the
+> spaced repetition API, and the MCP server (SDK v2, Supabase OAuth 2.1,
+> health). `list_decks`, `get_deck`, `search_cards` and `create_deck` work
+> end to end and render your library, your decks, your search results and
+> new decks inside the chat; the other MCP tools are published interfaces
+> that are not built yet.
+> See [docs/roadmap.md](docs/roadmap.md).
 
 ## What is in the box
 
-| Path                 | What                                                                                        |
-| -------------------- | ------------------------------------------------------------------------------------------- |
-| `apps/web`           | Next.js 16 app: magic-link sign-in, deck library, card editor, Connect your AI (en, sk, cs) |
-| `apps/api`           | NestJS core API: modular monolith of hexagonal modules, SQLite via Drizzle + libSQL         |
-| `apps/mcp`           | NestJS MCP server (Streamable HTTP): `list_decks`, `get_deck`, `create_deck`, `add_cards`   |
-| `packages/contracts` | Zod schemas and types shared by all three                                                   |
-| `packages/config`    | ESLint, Prettier, TypeScript and Vitest presets                                             |
+| Path                 | What                                                                                          |
+| -------------------- | --------------------------------------------------------------------------------------------- |
+| `apps/web`           | Next.js 16 app: magic-link sign-in, deck library, card editor, Connect your AI (en, sk, cs)   |
+| `apps/api`           | NestJS core API: modular monolith of hexagonal modules, SQLite via Drizzle + libSQL           |
+| `apps/mcp`           | NestJS MCP server (SDK v2, stateless Streamable HTTP, OAuth 2.1 via Supabase, MCP Apps views) |
+| `packages/contracts` | Zod schemas and types shared by all three                                                     |
+| `packages/config`    | ESLint, Prettier, TypeScript and Vitest presets                                               |
 
-Architecture: [docs/architecture.md](docs/architecture.md). Product:
+Architecture: [docs/architecture.md](docs/architecture.md), the MCP server:
+[docs/mcp-server.md](docs/mcp-server.md). Product:
 [docs/product-spec.md](docs/product-spec.md).
 
 ## Quick start
@@ -47,7 +52,7 @@ pnpm dev
 
 - Web: http://localhost:3000
 - API: http://localhost:4000/health
-- MCP: http://localhost:4100/mcp
+- MCP: http://localhost:4100/mcp (readiness: http://localhost:4100/health/ready)
 
 ### With Docker
 
@@ -61,15 +66,31 @@ only from them. SQLite lives on the `api-data` volume.
 
 ## Connect your AI
 
-Sign in, open **Connect your AI**, copy the access token, then for Claude
-Code:
+The MCP server is an OAuth 2.1 resource server and Supabase Auth is its
+authorization server, so MCP clients discover sign-in on their own:
+
+```bash
+claude mcp add --transport http deck-club http://localhost:4100/mcp
+```
+
+For that flow, enable the OAuth 2.1 server in your Supabase project
+(Authentication → OAuth Server, with dynamic client registration); the
+steps are in [docs/mcp-server.md](docs/mcp-server.md#supabase-setup). The
+consent page Supabase redirects to is not built yet, so until it is, sign in,
+open **Connect your AI**, copy the access token (valid one hour) and pass it
+yourself:
 
 ```bash
 claude mcp add --transport http deck-club http://localhost:4100/mcp --header "Authorization: Bearer TOKEN"
 ```
 
-Then ask: "Make 10 cards about the French Revolution in a new deck." The
-token is temporary (one hour) until the OAuth flow lands.
+Then ask: "What decks do I have?", "Show me my Spanish deck", "Do I already
+have a card about mitosis?" or "Make me a deck for my biology exam" —
+`list_decks`, `get_deck`, `search_cards` and `create_deck` answer, and a host
+that supports MCP Apps (Claude, ChatGPT, VS Code…) draws the result in the
+chat.
+The other tools, prompts and resources are listed but answer
+`NOT_IMPLEMENTED` until their slice is built.
 
 ## Development
 

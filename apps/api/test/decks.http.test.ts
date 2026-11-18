@@ -2,6 +2,7 @@ import {
   CLIENT_NAME_HEADER,
   type Card,
   type CardList,
+  type CardSearchResult,
   type Deck,
   type DeckList,
   type ProblemDetails,
@@ -216,5 +217,93 @@ describe('cards over HTTP, on real SQLite', () => {
     });
 
     expect(response.json<ProblemDetails>().code).toBe('VALIDATION_FAILED');
+  });
+});
+
+describe('card search over HTTP, on real SQLite', () => {
+  async function addCards(userId: string, deckId: string, fronts: string[]): Promise<void> {
+    const response = await app.inject({
+      method: 'POST',
+      url: `/decks/${deckId}/cards/batch`,
+      headers: signedInAs(userId),
+      payload: { cards: fronts.map((front) => ({ front, back: `${front} back` })) },
+    });
+    expect(response.statusCode).toBe(201);
+  }
+
+  it('finds the user’s cards ignoring case and accents, with their deck title', async () => {
+    const deck = await createDeck('ana', 'French');
+    await addCards('ana', deck.id, ['Le café', 'le thé']);
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/cards/search?q=CAFE',
+      headers: signedInAs('ana'),
+    });
+
+    expect(response.statusCode).toBe(200);
+    const result = response.json<CardSearchResult>();
+    expect(result.totalMatches).toBe(1);
+    expect(result.hits[0]).toMatchObject({ deckTitle: 'French', matchedIn: ['front', 'back'] });
+    expect(result.hits[0]?.card.front).toBe('Le café');
+  });
+
+  it('filters by deck and limits the results', async () => {
+    const french = await createDeck('ana', 'French');
+    const other = await createDeck('ana', 'Other');
+    await addCards('ana', french.id, ['chat noir', 'chat blanc']);
+    await addCards('ana', other.id, ['chat gris']);
+
+    const response = await app.inject({
+      method: 'GET',
+      url: `/cards/search?q=chat&deckId=${french.id}&limit=1`,
+      headers: signedInAs('ana'),
+    });
+
+    expect(response.json<CardSearchResult>()).toMatchObject({ totalMatches: 2 });
+    expect(response.json<CardSearchResult>().hits).toHaveLength(1);
+  });
+
+  it('never returns another user’s cards', async () => {
+    const deck = await createDeck('ben');
+    await addCards('ben', deck.id, ['secret']);
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/cards/search?q=secret',
+      headers: signedInAs('ana'),
+    });
+
+    expect(response.json<CardSearchResult>()).toEqual({ hits: [], totalMatches: 0 });
+  });
+
+  it('answers DECK_NOT_FOUND for a deck filter naming another user’s deck', async () => {
+    const deck = await createDeck('ben');
+
+    const response = await app.inject({
+      method: 'GET',
+      url: `/cards/search?q=x&deckId=${deck.id}`,
+      headers: signedInAs('ana'),
+    });
+
+    expect(response.statusCode).toBe(404);
+    expect(response.json<ProblemDetails>().code).toBe('DECK_NOT_FOUND');
+  });
+
+  it('rejects an empty search with VALIDATION_FAILED naming the field', async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/cards/search?q=%20',
+      headers: signedInAs('ana'),
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json<ProblemDetails>().issues?.[0]?.path).toBe('q');
+  });
+
+  it('rejects a search without a token', async () => {
+    const response = await app.inject({ method: 'GET', url: '/cards/search?q=x' });
+
+    expect(response.statusCode).toBe(401);
   });
 });

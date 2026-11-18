@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
 import { CLOCK, ID_GENERATOR, randomIds, systemClock } from '../../common/time-and-ids.js';
+import { CardSearchService } from './application/card-search.service.js';
 import { CardService } from './application/card.service.js';
 import { DeckService } from './application/deck.service.js';
 import { CARD_REPOSITORY } from './application/ports/card-repository.js';
 import { DECK_REPOSITORY } from './application/ports/deck-repository.js';
 import { DecksFacade } from './decks.facade.js';
+import { CardSearchController } from './http/card-search.controller.js';
 import { CardsController } from './http/cards.controller.js';
 import { DecksController } from './http/decks.controller.js';
 import { DrizzleCardRepository } from './infrastructure/drizzle/drizzle-card.repository.js';
@@ -12,10 +14,11 @@ import { DrizzleDeckRepository } from './infrastructure/drizzle/drizzle-deck.rep
 
 /** Decks and cards: the library bounded context. Exports only its facade. */
 @Module({
-  controllers: [DecksController, CardsController],
+  controllers: [DecksController, CardsController, CardSearchController],
   providers: [
     DeckService,
     CardService,
+    CardSearchService,
     DecksFacade,
     { provide: DECK_REPOSITORY, useClass: DrizzleDeckRepository },
     { provide: CARD_REPOSITORY, useClass: DrizzleCardRepository },

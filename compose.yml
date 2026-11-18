@@ -10,8 +10,9 @@
 # assistants) publish a port, and only on 127.0.0.1. The `api`, which owns the
 # data and every rule, publishes nothing: the web app reaches it through its
 # server-side /api/v1 forwarder and the MCP server through API_INTERNAL_URL.
-# The network is not `internal: true` because the api fetches Supabase's
-# signing keys and the web server talks to Supabase Auth.
+# The network is not `internal: true` because the api and the mcp server fetch
+# Supabase's signing keys (the mcp server also its OAuth 2.1 metadata) and the
+# web server talks to Supabase Auth.
 
 name: deck-club
 
@@ -45,6 +46,11 @@ services:
       LOG_FORMAT: json
       API_INTERNAL_URL: http://api:4000
       WEB_PUBLIC_URL: ${WEB_PUBLIC_URL:-http://localhost:3000}
+      # The OAuth resource identifier: the URL AI clients are configured with.
+      MCP_PUBLIC_URL: ${NEXT_PUBLIC_MCP_URL:-http://localhost:4100/mcp}
+      # Supabase Auth is the OAuth 2.1 authorization server for AI clients.
+      SUPABASE_URL: ${SUPABASE_URL:?SUPABASE_URL is required}
+      SUPABASE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:?NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY is required}
     ports: ['127.0.0.1:4100:4100']
     depends_on:
       api: { condition: service_healthy }
