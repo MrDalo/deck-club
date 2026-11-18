@@ -1,0 +1,5 @@
+# Findings gitleaks flags that are not secrets. One fingerprint per line:
+# <commit>:<file>:<rule>:<line>. Add an entry only after checking the value.
+
+# A random UUID used as the Idempotency-Key in the API's HTTP tests.
+dc8d9c8667e5a20faa1ac283e576fd284c26a449:apps/api/test/idempotency.http.test.ts:generic-api-key:25
