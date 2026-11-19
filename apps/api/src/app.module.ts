@@ -3,6 +3,7 @@ import { AuthModule } from './common/auth/auth.module.js';
 import { IdempotencyModule } from './common/idempotency/idempotency.module.js';
 import { ConfigModule } from './config/config.module.js';
 import { DatabaseModule } from './infra/database/database.module.js';
+import { ClubsModule } from './modules/clubs/clubs.module.js';
 import { DecksModule } from './modules/decks/decks.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { StudyModule } from './modules/study/study.module.js';
@@ -17,6 +18,7 @@ import { StudyModule } from './modules/study/study.module.js';
     HealthModule,
     DecksModule,
     StudyModule,
+    ClubsModule,
   ],
 })
 export class AppModule {}

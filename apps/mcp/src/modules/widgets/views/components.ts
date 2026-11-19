@@ -6,16 +6,8 @@ import { escapeHtml } from './escape-html.js';
  * deck or card text into markup unescaped.
  */
 
-/**
- * "1 card" or "N cards".
- * @param count - how many
- * @param singular - the word for one
- * @param plural - the word for several, `${singular}s` by default
- * @returns the label
- */
-export function countLabel(count: number, singular: string, plural = `${singular}s`): string {
-  return `${count} ${count === 1 ? singular : plural}`;
-}
+/** "1 card" or "N cards": shared with the text the AI reads, so both count alike. */
+export { countLabel } from '../../../common/text/count-label.js';
 
 /** What a page header shows. */
 export type PageHeaderOptions = {
@@ -39,6 +31,13 @@ export function pageHeader(options: PageHeaderOptions): string {
     </header>`;
 }
 
+/**
+ * Marks the one control that takes the keyboard focus after a view's own
+ * action redraws the view, e.g. the next card to study after a rating, so a
+ * keyboard or screen reader user is not sent back to the top.
+ */
+export const FOCUS_ATTRIBUTE = 'data-focus';
+
 /** What a button does and looks like. */
 export type ButtonOptions = {
   label: string;
@@ -48,6 +47,8 @@ export type ButtonOptions = {
   variant?: 'primary' | 'secondary';
   /** A fuller name for screen readers when the label alone is ambiguous ("Open deck" × 10). */
   accessibleName?: string;
+  /** Takes the focus after the view's own action redraws it (see {@link FOCUS_ATTRIBUTE}). */
+  focus?: boolean;
 };
 
 /**
@@ -61,11 +62,12 @@ export function actionButton(options: ButtonOptions): string {
     options.accessibleName === undefined
       ? ''
       : ` aria-label="${escapeHtml(options.accessibleName)}"`;
-  return `<button class="${variant}" type="button" data-action="${escapeHtml(options.action)}" data-value="${escapeHtml(options.value)}"${name}>${escapeHtml(options.label)}</button>`;
+  const focus = options.focus === true ? ` ${FOCUS_ATTRIBUTE}` : '';
+  return `<button class="${variant}" type="button" data-action="${escapeHtml(options.action)}" data-value="${escapeHtml(options.value)}"${name}${focus}>${escapeHtml(options.label)}</button>`;
 }
 
 /** Fill colours of the brand's pill chips (brand/README.md: pastels are fills). */
-export type ChipTone = 'paper' | 'sky' | 'mint';
+export type ChipTone = 'paper' | 'sky' | 'mint' | 'rose' | 'peach';
 
 /**
  * A small pill: a language code, a card type, a tag, "Added by Claude".

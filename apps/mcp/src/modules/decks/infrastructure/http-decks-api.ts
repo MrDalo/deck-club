@@ -14,16 +14,11 @@ import {
   type UpdateCardInput,
 } from '@deck-club/contracts';
 import type { McpCaller } from '../../../common/mcp/mcp-caller.js';
-import type {
-  ApiCredentials,
-  DeckClubApiClient,
+import {
+  credentialsOf,
+  type DeckClubApiClient,
 } from '../../../infra/deck-club-api/deck-club-api-client.js';
 import type { DecksApi, WriteOptions, WriteResult } from '../application/ports/decks-api.js';
-
-const credentialsOf = (caller: McpCaller): ApiCredentials => ({
-  accessToken: caller.accessToken,
-  clientName: caller.clientName,
-});
 
 const deckPath = (deckId: string): string => `/decks/${encodeURIComponent(deckId)}`;
 

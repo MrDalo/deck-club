@@ -29,9 +29,12 @@ Codex…) work with Deck Club over the Model Context Protocol:
 The platform is complete: transport, OAuth, health, and the whole published
 interface. `list_decks`, `get_deck`, `search_cards`, `create_deck` (the
 first write), `add_cards`, `update_card` and `delete_cards` (every deck
-tool) are built end to end, each with its MCP Apps view; the other
-tools, the resources and the prompts are interfaces only and refuse with
-`NOT_IMPLEMENTED` until their slice is built.
+tool), and `get_due_cards`, `submit_review` and `get_stats` (every study
+tool) are built end to end, each with its MCP Apps view (`submit_review` is
+rated from the study session view), and `list_clubs` with its view over the
+API's `GET /clubs` (see "Clubs"). The other club tools, the resources and
+the prompts are interfaces only and refuse with `NOT_IMPLEMENTED` until
+their slice is built.
 
 | Capability                                                                    | State                                                      |
 | ----------------------------------------------------------------------------- | ---------------------------------------------------------- |
@@ -46,8 +49,11 @@ tools, the resources and the prompts are interfaces only and refuse with
 | `add_cards` + its cards added view                                            | **Done** (no duplicate skipping yet; see "Adding cards")   |
 | `update_card` + its card updated view                                         | **Done**                                                   |
 | `delete_cards` + its cards deleted view                                       | **Done** (no restore in the API yet; see "Deleting cards") |
-| 6 further tools, 3 prompts, 3 resources                                       | Interface only (`NOT_IMPLEMENTED`)                         |
-| 2 further MCP Apps views (study session, stats)                               | Placeholder HTML                                           |
+| `get_due_cards` + its study session view                                      | **Done**                                                   |
+| `submit_review`, rated from the study session view                            | **Done** (no correction yet; see "Recording reviews")      |
+| `get_stats` + its stats view (and weak cards in `GET /study/stats`)           | **Done**                                                   |
+| `list_clubs` + its club list view (and the clubs module in the API)           | **Done** (members cannot open club decks yet; "Clubs")     |
+| 2 club tools, 3 prompts, 3 resources                                          | Interface only (`NOT_IMPLEMENTED`)                         |
 
 ## Layout: a modular monolith of hexagonal modules
 
@@ -56,12 +62,15 @@ apps/mcp/src/
   main.ts, app.module.ts
   config/              env.ts (Zod), ConfigModule
   common/              shared kernel, importable by every module
-    errors/            DeckClubError, notImplemented()
+    errors/            DeckClubError, notImplemented(), write-retry advice for the AI
     http/              Fastify ⇄ web Request bridge, FetchFunction
     mcp/               McpCaller, @McpFeature, registerTool / registerResource / registerPrompt, widget URIs
     health/            @HealthCheck probe contract
+    text/              countLabel() ("1 card", "12 members"), for the AI's text and the views
+    time/              timeUntil() ("back in 3 days"), for the AI's text and the views
+    web/               links into the web app (deckUrl, libraryUrl)
     discovery/         discoverProviders()
-  infra/deck-club-api/ DeckClubApiClient: the only way to the core API
+  infra/deck-club-api/ DeckClubApiClient: the only way to the core API; credentialsOf(caller) for every adapter
   modules/
     mcp-server/        POST /mcp: origin check → auth gate → client naming → createMcpHandler
     auth/              OAuth 2.1 resource server (domain · application · infrastructure · http · testing)
@@ -69,6 +78,7 @@ apps/mcp/src/
     decks/             list_decks … delete_cards, deck + guide resources, make_cards prompt
                        application/ports/ + infrastructure/ hold the port to the core API
     study/             get_due_cards, submit_review, get_stats, today resource, quiz_me, find_weak_spots
+                       application/ports/ + infrastructure/ hold the port to the core API
     clubs/             list_clubs, suggest_club_cards, create_battle
     widgets/           MCP Apps views (ui://deck-club/*.html)
 ```
@@ -111,26 +121,26 @@ Names, scopes and input schemas live in `packages/contracts`
 (`mcp-tools.ts`, `mcp-prompts.ts`, `mcp-resources.ts`); AI-facing titles and
 descriptions live next to each module's adapter (`*-tool-specs.ts`).
 
-| Tool                 | Scope       | Module | View           |
-| -------------------- | ----------- | ------ | -------------- |
-| `list_decks`         | decks:read  | decks  | deck library   |
-| `get_deck`           | decks:read  | decks  | deck           |
-| `search_cards`       | decks:read  | decks  | search results |
-| `create_deck`        | decks:write | decks  | deck created   |
-| `add_cards`          | decks:write | decks  | cards added    |
-| `update_card`        | decks:write | decks  | card updated   |
-| `delete_cards`       | decks:write | decks  | cards deleted  |
-| `get_due_cards`      | study       | study  | study session  |
-| `submit_review`      | study       | study  |                |
-| `get_stats`          | study       | study  | stats          |
-| `list_clubs`         | clubs       | clubs  |                |
-| `suggest_club_cards` | clubs       | clubs  |                |
-| `create_battle`      | clubs       | clubs  |                |
+| Tool                 | Scope       | Module | View            |
+| -------------------- | ----------- | ------ | --------------- |
+| `list_decks`         | decks:read  | decks  | deck library    |
+| `get_deck`           | decks:read  | decks  | deck            |
+| `search_cards`       | decks:read  | decks  | search results  |
+| `create_deck`        | decks:write | decks  | deck created    |
+| `add_cards`          | decks:write | decks  | cards added     |
+| `update_card`        | decks:write | decks  | card updated    |
+| `delete_cards`       | decks:write | decks  | cards deleted   |
+| `get_due_cards`      | study       | study  | study session   |
+| `submit_review`      | study       | study  | (study session) |
+| `get_stats`          | study       | study  | stats           |
+| `list_clubs`         | clubs       | clubs  | club list       |
+| `suggest_club_cards` | clubs       | clubs  |                 |
+| `create_battle`      | clubs       | clubs  |                 |
 
 Prompts: `make_cards`, `quiz_me`, `find_weak_spots`. Resources:
 `deck-club://decks/{deckId}`, `deck-club://study/today`,
 `deck-club://guides/card-writing`, and the views
-`ui://deck-club/{deck-library,deck,deck-created,cards-added,card-updated,cards-deleted,search-results,study-session,stats}.html`.
+`ui://deck-club/{deck-library,deck,deck-created,cards-added,card-updated,cards-deleted,search-results,study-session,stats,club-list}.html`.
 
 **Scopes.** Supabase's OAuth server issues only OpenID scopes, so Deck Club
 scopes are a grant made in Deck Club, per AI connection, not a token claim.
@@ -302,9 +312,129 @@ over.
   that is the only copy it has if the user wants them back.
 - **Logs** keep the deck id and the counts, never card content.
 
+## Due cards
+
+`get_due_cards` is how a quiz in the chat starts (spec 4.5). It relays
+`GET /study/due`, so **which cards are due, their order and the daily limits
+are the API's** (`apps/api/src/modules/study/domain/session-queue.ts`): the
+session order of spec 6, 20 new cards and 200 reviews per deck per day, the
+day boundary and the sibling rule. A chat session and a session in the app
+see the same queue.
+
+- **One deck or all.** With a `deckId`, the deck is read alongside the due
+  cards (`GET /decks/:id`), so the reply names the deck even when nothing is
+  due, tells a deck with no cards from one that is done for now, and can link
+  to it. Another user's deck is `DECK_NOT_FOUND`, from either read.
+- **Oriented cards.** The API turns each card for its direction: `prompt`
+  is what to ask, `answer` what to recall, so a reversible card asked from
+  its back needs nothing special here. The hints the API adds (`nextDue`,
+  when the card comes back for each rating) are kept for the view's rating
+  buttons, with `asOf`, the moment they count from.
+- **The reply.** Text for the AI: how many cards are due and in what scope,
+  one line per card with its state, deck, the deck id, card id and
+  direction that `submit_review` takes, both sides, and the quiz rules (one
+  card at a time, never the answer first, record every rating with a new
+  idempotencyKey). When more are due than were asked for, it says how many
+  wait and to call again once these are recorded. Structured content:
+  `GetDueCardsOutputSchema` (the deck or null, the cards, `totalDue`, the
+  library link, `asOf`).
+- **Logs** keep the scope, the deck id and the counts, never a prompt, an
+  answer or a deck title.
+
+## Recording reviews
+
+`submit_review` records how well the user remembered one card side through
+`POST /study/reviews`, the app's own use case: the same FSRS engine, the
+same schedule, stamped with the AI client as its source (spec 6: MCP
+reviews count for streak and league). The deck, the card and the side are
+checked by the API, so nothing is read first and a rating stays one round
+trip: another user's deck is `DECK_NOT_FOUND`, a card not in it
+`CARD_NOT_FOUND`, the reverse side of a basic card `DIRECTION_NOT_STUDIED`.
+
+- **Never rated twice.** The API records a review for any card at any
+  time, so a retried call without a key rates the card again. The tool
+  takes an `idempotencyKey` (see "Retrying writes"), and its description,
+  the quiz rules in `get_due_cards` and the server instructions all ask for
+  a new one per rating. An unconfirmed rating with a key says to call again
+  with the same key; without one it says to check `get_due_cards` first
+  and never to repeat an "again" (a card rated "again" stays due).
+- **The reply.** Text for the AI: what was recorded for which card, its new
+  state, when it comes back ("in 3 days", with the timestamp), and that a
+  card in learning comes back in today's session. A replay says first that
+  nothing was recorded twice. Structured content: `SubmitReviewOutputSchema`
+  (the API's review, the deck id, `replayed`, and `asOf`, the moment
+  `nextDueAt` counts from), read by the study session view.
+- **No view of its own.** In a quiz run in the chat the AI calls it once
+  per card, and a view per call would fill the conversation; the rating UI
+  is the study session view, which calls it through the host.
+- **Logs** keep the deck and card ids, the side, the rating, the new state,
+  the client and `replayed`, never card content or the key.
+
+**Not built yet:** correcting a rating ("mark that as again" after the
+fact). The API can undo the last rating of the day
+(`POST /study/reviews/undo`), but no tool exposes it; today a correction is
+a second review.
+
+## Stats
+
+`get_stats` answers "how am I doing?" (spec 6, 9). It reads `GET /study/stats`
+and `GET /study/today` in parallel, so every number is the API's and means
+what it means in the app: the streak (a day not studied yet does not break
+it), reviews today and in total, 30-day retention (the share of reviews of
+cards in review that were remembered), and what is still due today, in total
+and per deck, within today's limits.
+
+- **Weak cards are the API's rule.** `GET /study/stats` carries
+  `weakCards`: each card side rated Again at least twice in the last 30 days
+  (`WEAK_CARD_RULE` in contracts), the most forgotten first, then the most
+  recently forgotten, at most 5, oriented like a due card. The rule is a
+  pure function in the API's study domain (`domain/weak-cards.ts`); the
+  content comes through the decks facade, so a deleted card is never shown
+  from the review log. Added in this slice, as `search_cards` added its
+  endpoint: the field is additive.
+- **The reply.** Text for the AI: the streak and whether today still counts
+  for it, today's done and still-due cards per deck (with the deck ids for
+  `get_due_cards`), retention, the total, and each weak card with its deck
+  id, card id, direction, both sides and how often it was forgotten, then
+  how to help (explain, quiz when due, or a clearer card with `update_card`
+  once the user agrees). The description asks the AI to encourage, never
+  scold. Structured content: `GetStatsOutputSchema` (the API's stats,
+  `dueToday`, `decksDueToday` with links, the library link).
+- **Logs** keep numbers only (streak, today's reviews, cards still due, the
+  count of weak cards), never a card or a deck title.
+
+## Clubs
+
+`list_clubs` lists the clubs the user belongs to (spec 7, 9): each club's
+name and description, the user's own role (owner, admin or member, which
+says what they may do there), how many members it has, and the decks it
+shares. It reads `GET /clubs` with the user's token.
+
+- **The API's clubs module** (`apps/api/src/modules/clubs`) serves it, to
+  the contract in `packages/contracts` (`ClubListSchema` in `club.ts`):
+  only what a member may see in the app (spec 9): the caller's own role,
+  the member count rather than the members, and the invite code only for
+  owners and admins, otherwise `null`. Clubs are created (`POST /clubs`),
+  joined with their invite code (`POST /clubs/join`, at most 100 members)
+  and given decks by their owners and admins (`POST /clubs/:clubId/decks`)
+  in the API; no MCP tool or web screen does those yet.
+- **Shared decks stay their author's** (ADR 0010): a club links to decks its
+  owners and admins own, so the counts are real and the author keeps
+  adding cards. A member cannot yet open or study a club deck they do not
+  own (`get_deck` and `get_due_cards` answer `DECK_NOT_FOUND`); that is the
+  next club slice.
+- **The reply.** Text for the AI: one block per club with its id, the
+  user's role, "12 of 100 members", the visibility, the invite code when
+  present, and each shared deck with its id, language and card count.
+  Structured content: `ListClubsOutputSchema` (each club's decks are
+  `DeckSummary`s with their link, the shape the deck library uses).
+- **Logs** keep counts (clubs, shared decks), never a club's name or its
+  invite code.
+
 ## Retrying writes
 
-The write tools that are built, `create_deck` and `add_cards`, take an
+The write tools that are not safe to repeat, `create_deck`, `add_cards` and
+`submit_review`, take an
 optional `idempotencyKey` (`IdempotencyKeySchema`: 8 to 128 letters, digits,
 dashes and underscores). The tool descriptions and the server instructions
 ask the AI for a new key, such as a UUID, on every call, and to reuse it
@@ -432,6 +562,52 @@ a host can render it in a sandboxed iframe with no network of its own.
   With no match it says there is no card about it yet and offers to make
   some. Markup in `search-results-markup.ts`, entry in
   `browser/search-results.view.ts`.
+- **The study session view** (`ui://deck-club/study-session.html`) renders
+  `get_due_cards`: "N cards to review" (on the deck's own pastel for one
+  deck), then each card's question as a ruled index card with its answer
+  **face down** in a native `<details>` ("Show answer", named per card for
+  screen readers), so the view never gives away what the assistant is about
+  to ask. Chips give the card's state (New, Learning, Review, Relearning),
+  "Back to front" for a reversible card asked from its back and, across
+  decks, the deck in its pastel. Under a revealed answer, **four rating
+  buttons** (Again, Hard, Good, Easy, each in its pastel and saying when the
+  card comes back, "Good · 10 min") call `submit_review` **from the view,
+  through the host**. The key is the session (`asOf`) and the card, not the
+  rating, so a second press, a retry or the same result shown again later
+  never records a second review. The card then reads "Good · Recorded · back
+  in 3 days" ("Already recorded" for a replay), the focus moves to the next
+  card left to rate, answers the user opened stay open, and the view tells
+  the assistant which cards were rated (`ui/update-model-context`), so a
+  quiz in the chat neither asks nor records them again. A host without
+  `serverTools` gets the rating as a chat message instead. When every card
+  is rated, "Session done" offers "Next cards" (`get_due_cards` through the
+  host, same deck and size); until then a panel offers "Quiz me in the chat"
+  and the deck or the library in Deck Club. Nothing due reads "All caught
+  up"; a deck with no cards offers to add some. Card text is marked
+  `dir="auto"` for right-to-left scripts. Markup in
+  `study-session-markup.ts`, the view's state (keys, arguments, what the
+  assistant is told) in `study-session-state.ts`, entry in
+  `browser/study-session.view.ts`.
+- **The stats view** (`ui://deck-club/stats.html`) renders `get_stats`:
+  "Your progress" with a lead that encourages ("Study today to keep your
+  4-day streak"), four pastel tiles (streak, today with a progress bar a
+  screen reader reads as "12 of 20 done", 30-day retention, total reviews),
+  what is still due today per deck (the deck in its pastel, "3 reviews · 3
+  new", "Quiz me" asked of the assistant), and the cards the user keeps
+  forgetting as ruled index cards with both sides, "Forgotten 3×" and "Help
+  me remember it" (asked of the assistant). "Refresh" calls `get_stats`
+  **from the view, through the host** and takes the focus back; a host
+  without `serverTools` gets the request as a chat message. Markup in
+  `stats-markup.ts`, entry in `browser/stats.view.ts`.
+- **The club list view** (`ui://deck-club/club-list.html`) renders
+  `list_clubs`: "Your clubs" with the count of clubs and shared decks, then
+  one labelled section per club: its name and description, chips for the
+  user's role (Owner, Admin, Member, each in its pastel), Private or
+  Public, "12 of 100 members", and "Invite code: …" for owners and admins;
+  then the club's decks as the deck library's own tiles (`deckTile`, titled
+  `<h3>` under the club's heading) with "Open deck". A club with no deck says
+  so; no club at all offers Deck Club. Markup in `club-list-markup.ts`,
+  entry in `browser/club-list.view.ts`.
 - **The deck library view** (`ui://deck-club/deck-library.html`) renders the
   `list_decks` result: one index card per deck with its card count and
   language, a button to open the deck in Deck Club (`ui/open-link`) and one
@@ -441,7 +617,9 @@ a host can render it in a sandboxed iframe with no network of its own.
   it lands on `add_cards`.
 - **Build.** `pnpm build` (and `pnpm build:views`) bundles each entry in
   `VIEW_ENTRIES` (`deckLibrary`, `deck`, `searchResults`, `deckCreated`,
-  `cardsAdded`, `cardUpdated`, `cardsDeleted`) with
+  `cardsAdded`, `cardUpdated`, `cardsDeleted`, `studySession`, `stats`,
+  `clubList`:
+  every published view) with
   esbuild into
   `dist/views/<widget>.js`, which
   `BundledWidgetViews` inlines into the document and caches. A view without
@@ -451,7 +629,10 @@ a host can render it in a sandboxed iframe with no network of its own.
 - **Data.** Each tool with a view declares `outputSchema`
   (`ListDecksOutputSchema`, `GetDeckOutputSchema`, `SearchCardsOutputSchema`,
   `CreateDeckOutputSchema`, `AddCardsOutputSchema`, `UpdateCardOutputSchema`,
-  `DeleteCardsOutputSchema`),
+  `DeleteCardsOutputSchema`, `GetDueCardsOutputSchema`; and
+  `GetStatsOutputSchema`, `ListClubsOutputSchema`; and
+  `SubmitReviewOutputSchema`, which has no view
+  but is read by one),
   the SDK validates the
   `structuredContent` it returns, and the view parses it again with the same
   contracts schema before rendering — one validator on both sides, and

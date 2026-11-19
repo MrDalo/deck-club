@@ -57,6 +57,9 @@ apps/api/src/
     health/
     decks/         domain/ · application/ (+ ports/) · infrastructure/ (drizzle, memory) · http/ · testing/ · decks.facade.ts
                    (decks, cards, and card search: GET /cards/search, matching rule in domain/card-search.ts)
+    study/         the same layers: FSRS scheduling, due cards, reviews, undo, stats and weak cards; reads cards through DecksFacade
+    clubs/         the same layers: clubs, members and roles, invite codes, shared decks (GET /clubs, POST /clubs,
+                   POST /clubs/join, POST /clubs/:clubId/decks); reads decks through DecksFacade (ADR 0010)
 ```
 
 A module talks to another only through its facade (async, returns DTOs).
@@ -129,7 +132,8 @@ recipe for building a tool: [`mcp-server.md`](mcp-server.md).
 ## Data
 
 SQLite through `@libsql/client` and Drizzle (ADR 0003). Each module owns its
-tables (`decks`, `cards`, `study_states`, `reviews` today) in
+tables (`decks`, `cards`, `study_states`, `reviews`, `clubs`, `club_members`,
+`club_decks` today) in
 `infrastructure/drizzle/<module>.schema.ts`; the shared kernel's
 `idempotency_keys` (not business data, kept a day) sits in
 `common/idempotency/`. Migrations are generated into `apps/api/drizzle/` and
@@ -145,7 +149,7 @@ parse with the same schema, so the UI and the AI cannot validate differently.
 
 Writes that would change something again when repeated (`POST /decks`,
 `POST /decks/:id/cards`, `POST /decks/:id/cards/batch`, `POST /study/reviews`,
-`POST /study/reviews/undo`) take an optional `Idempotency-Key` header
+`POST /study/reviews/undo`, `POST /clubs`) take an optional `Idempotency-Key` header
 (ADR 0009). Per user, a retry of the same request gets the first response
 back with `Idempotent-Replayed: true` and writes nothing; the key with a
 different request is `IDEMPOTENCY_KEY_REUSED` (422), and while the first

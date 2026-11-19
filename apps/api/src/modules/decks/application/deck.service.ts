@@ -24,6 +24,18 @@ export class DeckService {
     return toDeckDto(await loadManagedDeck(this.decks, userId, deckId));
   }
 
+  /**
+   * Live decks by id, whoever owns them. Only for a caller that has already
+   * decided the reader may see them (a club showing its shared decks to its
+   * members); never behind a route of its own.
+   * @param deckIds - the decks to read
+   * @returns the live ones, in no particular order
+   */
+  async findMany(deckIds: readonly string[]): Promise<DeckDto[]> {
+    const entries = await this.decks.listByIds(deckIds);
+    return entries.map(toDeckDto);
+  }
+
   async create(userId: string, command: CreateDeckCommand): Promise<DeckDto> {
     const deck = createDeck({
       id: this.ids.next(),

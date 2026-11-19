@@ -11,6 +11,12 @@ import type {
 } from '@deck-club/contracts';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { DeckClubError, notImplemented } from '../../../common/errors/deck-club-error.js';
+import {
+  explainRepeatableWriteRefusal,
+  explainWriteRefusal,
+  type RepeatableWriteAdvice,
+  type WriteRetryAdvice,
+} from '../../../common/errors/write-retries.js';
 import type { PromptMessageText, ResourceBody } from '../../../common/mcp/content-registration.js';
 import type { McpCaller } from '../../../common/mcp/mcp-caller.js';
 import type { ToolReply } from '../../../common/mcp/tool-registration.js';
@@ -24,12 +30,6 @@ import { formatDeckDetail, toDeckDetail } from './deck-detail-view.js';
 import { formatDeckLibrary, toDeckLibrary } from './deck-library-view.js';
 import { decodeCursor } from './deck-page.js';
 import { DECKS_API, type DecksApi, type WriteResult } from './ports/decks-api.js';
-import {
-  explainRepeatableWriteRefusal,
-  explainWriteRefusal,
-  type RepeatableWriteAdvice,
-  type WriteRetryAdvice,
-} from './write-retries.js';
 
 /** How `create_deck` tells the AI to recover from an unconfirmed write. */
 const CREATE_DECK_RETRY: WriteRetryAdvice = {

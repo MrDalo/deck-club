@@ -6,9 +6,16 @@ import {
   UpdateCardInputSchema,
 } from './card.js';
 import { CARD_SEARCH_LIMITS, CardSearchFieldSchema } from './card-search.js';
+import { ClubSchema } from './club.js';
 import { CreateDeckInputSchema, DeckVisibilitySchema } from './deck.js';
-import { STUDY_DEFAULTS, SubmitReviewInputSchema } from './study.js';
-import { IdSchema, LanguageSchema } from './text.js';
+import {
+  DueCardSchema,
+  ReviewResultSchema,
+  STUDY_DEFAULTS,
+  StudyStatsSchema,
+  SubmitReviewInputSchema,
+} from './study.js';
+import { IdSchema, LanguageSchema, TimestampSchema } from './text.js';
 
 /**
  * OAuth scopes of an AI connection (product spec 9, "Connection and auth").
@@ -327,17 +334,120 @@ export const GetDueCardsToolInputSchema = z.object({
 });
 export type GetDueCardsToolInput = z.infer<typeof GetDueCardsToolInputSchema>;
 
-/** `submit_review` arguments: exactly the body of `POST /study/reviews`. */
-export const SubmitReviewToolInputSchema = SubmitReviewInputSchema;
+/**
+ * Structured result of `get_due_cards`: the tool's `outputSchema`, and the
+ * data its study session view renders. The cards are the first of the
+ * session, in the API's order (spec 6), within today's limits, each already
+ * oriented (`prompt` to ask, `answer` to recall) with when it comes back for
+ * each rating, which the view's rating buttons show.
+ */
+export const GetDueCardsOutputSchema = z.object({
+  /** The deck the session is limited to, with its card count; null for every deck. */
+  deck: z
+    .object({
+      id: IdSchema,
+      title: z.string(),
+      url: z.url(),
+      cardCount: z.number().int().nonnegative(),
+    })
+    .nullable(),
+  cards: z.array(DueCardSchema).max(STUDY_DEFAULTS.maxDueCardsPerRequest),
+  /** How many cards are due now in total, within today's limits; more than `cards` when some wait. */
+  totalDue: z.number().int().nonnegative(),
+  /** The deck library in the web app. */
+  libraryUrl: z.url(),
+  /** When the cards were read: the rating hints count from here. */
+  asOf: TimestampSchema,
+});
+export type GetDueCardsOutput = z.infer<typeof GetDueCardsOutputSchema>;
+
+/**
+ * `submit_review` arguments: the body of `POST /study/reviews`, described for
+ * the AI, and the idempotency key that makes a retry record the rating once.
+ */
+export const SubmitReviewToolInputSchema = z.object({
+  deckId: DeckIdArgument.describe('The card’s deck id, as returned by get_due_cards.'),
+  cardId: CardIdArgument.describe('The card id, as returned by get_due_cards.'),
+  direction: SubmitReviewInputSchema.shape.direction.describe(
+    'The side that was asked, as returned by get_due_cards: "forward" (the default) or "reverse".',
+  ),
+  rating: SubmitReviewInputSchema.shape.rating.describe(
+    'How well the user remembered: "again" (forgot or wrong), "hard" (right with real effort), "good" (right), "easy" (right at once).',
+  ),
+  durationMs: SubmitReviewInputSchema.shape.durationMs.describe(
+    'Optional. How long the user took to answer, in milliseconds, if you know it.',
+  ),
+  idempotencyKey: IdempotencyKeySchema.optional(),
+});
 export type SubmitReviewToolInput = z.infer<typeof SubmitReviewToolInputSchema>;
+
+/**
+ * Structured result of `submit_review`: the review the API recorded and when
+ * the card comes back. Read by the study session view, which records ratings
+ * through the host.
+ */
+export const SubmitReviewOutputSchema = ReviewResultSchema.extend({
+  deckId: IdSchema,
+  /** True when this answers a retry with the same idempotencyKey: nothing was recorded twice. */
+  replayed: z.boolean(),
+  /** When the answer was given: `nextDueAt` counts from here. */
+  asOf: TimestampSchema,
+});
+export type SubmitReviewOutput = z.infer<typeof SubmitReviewOutputSchema>;
 
 /** `get_stats` takes no arguments. */
 export const GetStatsToolInputSchema = z.object({});
 export type GetStatsToolInput = z.infer<typeof GetStatsToolInputSchema>;
 
+/** A deck with cards still due today, as the stats show it. */
+export const DeckDueTodaySchema = z.object({
+  id: IdSchema,
+  title: z.string(),
+  url: z.url(),
+  dueReviews: z.number().int().nonnegative(),
+  newCards: z.number().int().nonnegative(),
+});
+export type DeckDueToday = z.infer<typeof DeckDueTodaySchema>;
+
+/**
+ * Structured result of `get_stats`: the tool's `outputSchema`, and the data
+ * its stats view renders. The API's stats (streak, today's reviews, 30-day
+ * retention, the cards the user keeps forgetting) and what is still due
+ * today, in total and per deck, within today's limits.
+ */
+export const GetStatsOutputSchema = StudyStatsSchema.extend({
+  dueToday: z.object({
+    dueReviews: z.number().int().nonnegative(),
+    newCards: z.number().int().nonnegative(),
+  }),
+  /** The decks with something still due today, in library order. */
+  decksDueToday: z.array(DeckDueTodaySchema),
+  /** The deck library in the web app. */
+  libraryUrl: z.url(),
+});
+export type GetStatsOutput = z.infer<typeof GetStatsOutputSchema>;
+
 /** `list_clubs` takes no arguments. */
 export const ListClubsToolInputSchema = z.object({});
 export type ListClubsToolInput = z.infer<typeof ListClubsToolInputSchema>;
+
+/** One club in the `list_clubs` result: the club as a member sees it, its decks as library tiles. */
+export const ClubSummarySchema = ClubSchema.omit({ joinedAt: true, decks: true }).extend({
+  decks: z.array(DeckSummarySchema),
+});
+export type ClubSummary = z.infer<typeof ClubSummarySchema>;
+
+/**
+ * Structured result of `list_clubs`: the tool's `outputSchema`, and the data
+ * its club list view renders. Only what a member may see (spec 9).
+ */
+export const ListClubsOutputSchema = z.object({
+  clubs: z.array(ClubSummarySchema),
+  clubCount: z.number().int().nonnegative(),
+  /** The deck library in the web app. */
+  libraryUrl: z.url(),
+});
+export type ListClubsOutput = z.infer<typeof ListClubsOutputSchema>;
 
 /** `suggest_club_cards` arguments: cards proposed for a club deck's review queue (spec 7). */
 export const SuggestClubCardsToolInputSchema = z.object({

@@ -42,6 +42,17 @@ export class DecksFacade {
     );
   }
 
+  /**
+   * Decks by id for a module that has already authorized the reader, e.g.
+   * the decks a club shares, shown to its members. Missing and deleted decks
+   * are left out.
+   * @param deckIds - the decks to read
+   * @returns the live decks, in no particular order
+   */
+  async listDecksByIds(deckIds: readonly string[]): Promise<Deck[]> {
+    return this.deckService.findMany(deckIds);
+  }
+
   /** One card of a deck the user may manage; throws DECK_NOT_FOUND or CARD_NOT_FOUND otherwise. */
   async getManagedCard(userId: string, deckId: string, cardId: string): Promise<Card> {
     return this.cardService.get(userId, { deckId, cardId });

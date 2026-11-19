@@ -6,8 +6,8 @@ import {
   type DeckCard,
   type UpdateCardOutput,
 } from '@deck-club/contracts';
+import { deckUrl } from '../../../common/web/web-links.js';
 import { describeCard, toDeckCard } from './deck-detail-view.js';
-import { deckUrl } from './deck-library-view.js';
 
 const sameValue = (before: DeckCard, after: DeckCard, field: CardEditField): boolean => {
   const [was, is] = [before[field], after[field]];

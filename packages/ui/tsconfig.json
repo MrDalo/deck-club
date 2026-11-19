@@ -1,0 +1,19 @@
+{
+  "extends": "@deck-club/config/tsconfig/react-library.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": ".",
+    // Type-checks stories and tests too, which are never emitted, so it does not
+    // ask for nameable declaration types; tsconfig.build.json does, for dist/.
+    "declaration": false,
+    "declarationMap": false,
+    // `#ui/*`, `#lib/*`… resolve to src/ inside this package and to dist/ for
+    // consumers (package.json "imports"). Vite and Vitest set the same condition.
+    "customConditions": ["source"],
+    // shadcn/ui primitives in src/ui are written for shadcn's default tsconfig
+    // and are never edited by hand (ui-lock.json); some (calendar, sonner) do
+    // not type-check under exactOptionalPropertyTypes.
+    "exactOptionalPropertyTypes": false
+  },
+  "include": ["src", ".storybook/*.ts", "*.ts"]
+}

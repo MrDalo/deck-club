@@ -3,8 +3,8 @@ import type {
   SearchCardsOutput,
   SearchCardsToolInput,
 } from '@deck-club/contracts';
+import { deckUrl } from '../../../common/web/web-links.js';
 import { describeCard, toDeckCard } from './deck-detail-view.js';
-import { deckUrl } from './deck-library-view.js';
 
 /**
  * Turns the API's matches into the `search_cards` result: the data its MCP

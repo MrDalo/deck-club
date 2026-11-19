@@ -1,0 +1,6 @@
+# Prettier reads the .prettierignore of the directory it runs in, so the root
+# one does not apply when it is run from here.
+dist
+storybook-static
+# shadcn/ui primitives stay exactly as the shadcn CLI writes them (ui-lock.json)
+src/ui

@@ -1,0 +1,266 @@
+/*
+ * Deck Club theme for Tailwind CSS v4: the brand tokens (brand/README.md,
+ * apps/web/src/app/globals.css) mapped onto the semantic variables shadcn/ui
+ * components read (--primary, --muted, --ring…).
+ *
+ * Tailwind consumers (the web app) import this after Tailwind:
+ *   @import 'tailwindcss';
+ *   @import '@deck-club/ui/theme.css';
+ * Consumers without Tailwind (MCP Apps views) use the precompiled
+ * `@deck-club/ui/styles.css` instead.
+ *
+ * Light mode only, by brand decision. Pastels are fills and never carry text;
+ * text on them is Ink, which keeps every pairing above WCAG 2.2 AA.
+ */
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+/* Generate the utilities this package's components use, wherever it is imported from. */
+@source '..';
+
+/*
+ * shadcn components carry `dark:` classes. Tailwind's default `dark` variant
+ * follows the OS setting; binding it to a `.dark` ancestor that Deck Club
+ * never renders keeps the whole UI on paper, whatever the OS prefers.
+ */
+@custom-variant dark (&:is(.dark *));
+
+/* Brand tokens. `static`: always emitted, because plain CSS (MCP views) reads them too. */
+@theme static {
+  --color-paper: #faf8ff;
+  --color-card: #ffffff;
+  --color-ink: #24203a;
+  --color-ink-soft: #5b5575;
+  --color-line: #e4def5;
+  --color-focus: #6e56cf;
+
+  --color-lilac: #cdbffb;
+  --color-mint: #bdebd6;
+  --color-peach: #ffd3b8;
+  --color-rose: #f9c2d1;
+  --color-sky: #c3e0fa;
+  --color-butter: #fff0a8;
+
+  /* The one dark rose: error text and invalid borders (the web app's FieldError). 8:1 on Card. */
+  --color-danger: #9b1c41;
+
+  /* next/font sets --font-bricolage / --font-atkinson in the web app; elsewhere the Google Fonts names apply. */
+  --font-display: var(
+    --font-bricolage,
+    'Bricolage Grotesque',
+    ui-sans-serif,
+    system-ui,
+    sans-serif
+  );
+  --font-sans: var(--font-atkinson, 'Atkinson Hyperlegible', ui-sans-serif, system-ui, sans-serif);
+
+  --shadow-sticker: 3px 3px 0 0 var(--color-ink);
+  --shadow-sticker-sm: 2px 2px 0 0 var(--color-ink);
+  --radius-card: 1.25rem;
+}
+
+/* The blinking caret of the one-time-code input (input-otp draws its own). */
+@theme {
+  --animate-caret-blink: caret-blink 1.2s ease-out infinite;
+
+  @keyframes caret-blink {
+    0%,
+    70%,
+    100% {
+      opacity: 1;
+    }
+    20%,
+    50% {
+      opacity: 0;
+    }
+  }
+}
+
+/* A progress bar with no known value: a band sliding across, over and over. */
+@theme {
+  --animate-progress-indeterminate: progress-indeterminate 1.4s ease-in-out infinite;
+
+  @keyframes progress-indeterminate {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(250%);
+    }
+  }
+}
+
+/* shadcn/ui semantic tokens, expressed in brand colours. */
+:root {
+  --radius: 0.75rem;
+
+  --background: var(--color-paper);
+  --foreground: var(--color-ink);
+  --card: var(--color-card);
+  --card-foreground: var(--color-ink);
+  --popover: var(--color-card);
+  --popover-foreground: var(--color-ink);
+
+  --primary: var(--color-lilac);
+  --primary-foreground: var(--color-ink);
+  --secondary: var(--color-line);
+  --secondary-foreground: var(--color-ink);
+  --muted: var(--color-line);
+  --muted-foreground: var(--color-ink-soft);
+  /* Hovered and highlighted items get the highlighter. */
+  --accent: var(--color-butter);
+  --accent-foreground: var(--color-ink);
+  --destructive: var(--color-danger);
+
+  /* Dividers are quiet; input outlines need 3:1 against the surface (WCAG 1.4.11), so they are Ink soft. */
+  --border: var(--color-line);
+  --input: var(--color-ink-soft);
+  --ring: var(--color-focus);
+
+  --chart-1: var(--color-lilac);
+  --chart-2: var(--color-mint);
+  --chart-3: var(--color-peach);
+  --chart-4: var(--color-sky);
+  --chart-5: var(--color-rose);
+
+  --sidebar: var(--color-paper);
+  --sidebar-foreground: var(--color-ink);
+  --sidebar-primary: var(--color-lilac);
+  --sidebar-primary-foreground: var(--color-ink);
+  --sidebar-accent: var(--color-butter);
+  --sidebar-accent-foreground: var(--color-ink);
+  --sidebar-border: var(--color-line);
+  --sidebar-ring: var(--color-focus);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    color-scheme: light;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    line-height: 1.55;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    text-wrap: balance;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+}
+
+/* The signature: a pastel highlighter swipe behind a word. Set `--highlight` for another pastel. */
+@utility highlight {
+  background-image: linear-gradient(
+    100deg,
+    transparent 0.2em,
+    var(--highlight, var(--color-butter)) 0.35em,
+    var(--highlight, var(--color-butter)) calc(100% - 0.25em),
+    transparent 100%
+  );
+  background-repeat: no-repeat;
+  background-size: 100% 0.62em;
+  background-position: 0 88%;
+  padding-inline: 0.12em;
+  box-decoration-break: clone;
+}
+
+/* Index-card ruling: faint lines with the rose margin rule at the top. */
+@utility ruled {
+  background-color: var(--color-card);
+  background-image:
+    linear-gradient(var(--color-rose), var(--color-rose)),
+    repeating-linear-gradient(transparent 0 1.9rem, var(--color-line) 1.9rem 2rem);
+  background-size:
+    100% 2px,
+    100% 100%;
+  background-position:
+    0 2.75rem,
+    0 2.75rem;
+  background-repeat: no-repeat, repeat;
+}
+
+/* Notebook lines without the margin rule. Pattern only: pair it with a fill. */
+@utility lined-paper {
+  background-image: repeating-linear-gradient(transparent 0 1.9rem, var(--color-line) 1.9rem 2rem);
+}
+
+/* Graph paper: the squared pages of a study notebook. Pattern only. */
+@utility grid-paper {
+  background-image:
+    linear-gradient(var(--color-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-line) 1px, transparent 1px);
+  background-size: 1.5rem 1.5rem;
+}
+
+/* A dot grid, for sketching and planning. Pattern only. */
+@utility dot-paper {
+  background-image: radial-gradient(
+    color-mix(in oklab, var(--color-ink-soft) 40%, transparent) 1.2px,
+    transparent 1.4px
+  );
+  background-size: 1.25rem 1.25rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

@@ -22,6 +22,9 @@ export function askForQuiz(deckTitle: string): string {
   return `Quiz me on my "${deckTitle}" deck.`;
 }
 
+/** The request for an in-chat quiz over every deck's due cards (spec 4.5). */
+export const ASK_FOR_DUE_QUIZ = 'Quiz me on my due cards.';
+
 /**
  * For hosts that do not let a view call the server itself.
  * @param deckTitle - the deck being read
@@ -86,3 +89,37 @@ export function askToAddBack(deckTitle: string, count: number): string {
 export function askToDeleteRest(deckTitle: string, count: number): string {
   return `Try again to delete the ${count === 1 ? 'card' : `${count} cards`} you could not delete from my "${deckTitle}" deck.`;
 }
+
+/**
+ * For hosts that do not let a view call the server itself: the assistant
+ * records the rating the user picked in the study view.
+ * @param prompt - what the card asked
+ * @param rating - the rating the user picked
+ * @returns the request to record it
+ */
+export function askToRate(prompt: string, rating: string): string {
+  return `Mark my card "${prompt}" as "${rating}".`;
+}
+
+/**
+ * For hosts that do not let a view call the server itself.
+ * @param deckTitle - the deck the session is limited to, or null for every deck
+ * @returns the request for the next due cards
+ */
+export function askForNextDueCards(deckTitle: string | null): string {
+  return deckTitle === null
+    ? 'Show me my next due cards.'
+    : `Show me my next due cards in my "${deckTitle}" deck.`;
+}
+
+/**
+ * From the stats: the user wants help with a card they keep forgetting.
+ * @param prompt - what the card asks
+ * @returns the request for help
+ */
+export function askForHelpWithCard(prompt: string): string {
+  return `Help me remember my card "${prompt}": I keep forgetting it.`;
+}
+
+/** For hosts that do not let a view call the server itself: the stats again. */
+export const ASK_FOR_STATS = 'Show me my Deck Club stats.';

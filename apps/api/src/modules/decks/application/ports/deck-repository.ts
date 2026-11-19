@@ -10,6 +10,8 @@ export type DeckWithCardCount = {
 export type DeckRepository = {
   listByOwner(ownerId: string): Promise<DeckWithCardCount[]>;
   findById(deckId: string): Promise<DeckWithCardCount | null>;
+  /** The live decks among these ids, whoever owns them; missing and deleted ones are left out. */
+  listByIds(deckIds: readonly string[]): Promise<DeckWithCardCount[]>;
   insert(deck: Deck): Promise<void>;
   /** Saves every field of an existing deck, including `deletedAt`. */
   update(deck: Deck): Promise<void>;

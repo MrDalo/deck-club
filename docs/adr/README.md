@@ -14,3 +14,5 @@ their status line.
 | [0007](0007-fsrs-via-ts-fsrs.md)                   | FSRS through ts-fsrs, behind a scheduler port                                | Proposed |
 | [0008](0008-mcp-sdk-v2-oauth-and-apps.md)          | MCP SDK v2 (stateless), Supabase as OAuth 2.1 server, MCP Apps views         | Accepted |
 | [0009](0009-idempotency-keys-for-api-writes.md)    | Idempotency keys for API writes, in the shared kernel                        | Accepted |
+| [0010](0010-club-decks-shared-by-link.md)          | Clubs share decks by link; the deck stays its author's                       | Accepted |
+| [0011](0011-ui-component-library.md)               | A shared component library: vendored shadcn/ui primitives, branded wrappers  | Proposed |

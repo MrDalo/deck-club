@@ -1,0 +1,168 @@
+import { ColorItem, ColorPalette, Meta, Typeset, Unstyled } from '@storybook/addon-docs/blocks';
+
+<Meta title="Foundations/Brand" />
+
+# Deck Club brand
+
+**Index cards and highlighters.** Pastel highlighter ink on lilac-tinted index-card
+paper. Light mode only, by decision. The source of truth is `brand/README.md`; the
+tokens live in `src/styles/theme.css`.
+
+Pastels are always fills. Text on them is Ink, which keeps every pairing above
+WCAG 2.2 AA. Spend boldness once per screen.
+
+## Colour
+
+<ColorPalette>
+  <ColorItem
+    title="Paper, card, ink"
+    subtitle="Surfaces and text"
+    colors={{
+      Paper: '#faf8ff',
+      Card: '#ffffff',
+      Ink: '#24203a',
+      'Ink soft': '#5b5575',
+      Line: '#e4def5',
+    }}
+  />
+  <ColorItem
+    title="Pastels"
+    subtitle="Fills only, never text"
+    colors={{
+      Lilac: '#cdbffb',
+      Mint: '#bdebd6',
+      Peach: '#ffd3b8',
+      Rose: '#f9c2d1',
+      Sky: '#c3e0fa',
+      Butter: '#fff0a8',
+    }}
+  />
+  <ColorItem
+    title="Signals"
+    subtitle="Keyboard focus; error text and invalid borders"
+    colors={{ Focus: '#6e56cf', Danger: '#9b1c41' }}
+  />
+</ColorPalette>
+
+## What shadcn/ui primitives read
+
+The primitives in `src/ui` use shadcn's semantic tokens. `theme.css` maps each one to
+a brand colour:
+
+<table>
+  <thead>
+    <tr>
+      <th>Token</th>
+      <th>Brand colour</th>
+      <th>Where it shows</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>
+        <code>background / foreground</code>
+      </td>
+      <td>Paper / Ink</td>
+      <td>The page</td>
+    </tr>
+    <tr>
+      <td>
+        <code>card, popover</code>
+      </td>
+      <td>Card</td>
+      <td>Cards, menus, dialogs</td>
+    </tr>
+    <tr>
+      <td>
+        <code>primary</code>
+      </td>
+      <td>Lilac</td>
+      <td>Primary actions</td>
+    </tr>
+    <tr>
+      <td>
+        <code>secondary, muted</code>
+      </td>
+      <td>Line</td>
+      <td>Quiet fills; muted text is Ink soft</td>
+    </tr>
+    <tr>
+      <td>
+        <code>accent</code>
+      </td>
+      <td>Butter</td>
+      <td>Hovered and highlighted items</td>
+    </tr>
+    <tr>
+      <td>
+        <code>destructive</code>
+      </td>
+      <td>Danger</td>
+      <td>Errors</td>
+    </tr>
+    <tr>
+      <td>
+        <code>border / input / ring</code>
+      </td>
+      <td>Line / Ink soft / Focus</td>
+      <td>Dividers, input outlines, keyboard focus</td>
+    </tr>
+    <tr>
+      <td>
+        <code>chart-1 … chart-5</code>
+      </td>
+      <td>Lilac, Mint, Peach, Sky, Rose</td>
+      <td>Charts</td>
+    </tr>
+  </tbody>
+</table>
+
+## Type
+
+<Typeset
+  fontFamily="var(--font-display)"
+  fontWeight={800}
+  fontSizes={['2.5rem', '1.875rem', '1.5rem', '1.125rem']}
+  sampleText="Make me a deck for my biology exam"
+/>
+
+**Bricolage Grotesque** (display, 700–800, tracking −0.02em): headings, deck titles,
+the front of a card.
+
+<Typeset
+  fontFamily="var(--font-sans)"
+  fontWeight={400}
+  fontSizes={['1.125rem', '1rem', '0.875rem']}
+  sampleText="Learn alone with spaced repetition, learn together in clubs."
+/>
+
+**Atkinson Hyperlegible** (text): everything else.
+
+## Motifs
+
+<Unstyled>
+  <div className="grid gap-6 sm:grid-cols-3">
+    <div className="rounded-card border-2 border-ink bg-card p-4">
+      <p className="font-display text-2xl font-extrabold">
+        <span className="highlight">Highlighter</span>
+      </p>
+      <p className="mt-2 text-sm text-ink-soft">
+        <code>highlight</code>: one per page, behind the main heading. Set <code>--highlight</code>{' '}
+        for another pastel.
+      </p>
+    </div>
+    <div className="ruled min-h-40 rounded-card border-2 border-ink p-4">
+      <p className="font-display font-bold">Ruled card</p>
+      <p className="mt-8 text-sm">
+        <code>ruled</code>: card previews and panels.
+      </p>
+    </div>
+    <div className="rounded-card border-2 border-ink bg-lilac p-4 shadow-sticker">
+      <p className="font-display font-bold">Sticker</p>
+      <p className="mt-2 text-sm">
+        2px Ink border, hard offset shadow: <code>shadow-sticker</code>,{' '}
+        <code>shadow-sticker-sm</code>, <code>rounded-card</code>.
+      </p>
+    </div>
+  </div>
+</Unstyled>

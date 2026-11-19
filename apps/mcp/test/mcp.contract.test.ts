@@ -12,7 +12,14 @@ import { DecksService } from '../src/modules/decks/application/decks.service.js'
 import { undoArguments } from '../src/modules/widgets/views/card-updated-markup.js';
 import { addBackArguments } from '../src/modules/widgets/views/cards-deleted-markup.js';
 import {
+  readDueCards,
+  readReview,
+  reviewArguments,
+  withReview,
+} from '../src/modules/widgets/views/study-session-state.js';
+import {
   API_CARDS,
+  API_CLUB,
   API_DECK,
   connectClient,
   postJsonRpc,
@@ -391,8 +398,164 @@ describe.each(['modern', 'legacy'] as const)('MCP over Streamable HTTP, %s era',
     expect((view.contents[0] as { text: string }).text).toContain('Add them back as new cards');
   });
 
-  it('answers a tool that is not built yet with a REJECTED tool result', async () => {
+  it('reads the due cards through the API, for the model and for the view', async () => {
+    const result = await (
+      await connect(era)
+    ).callTool({ name: 'get_due_cards', arguments: { deckId: API_DECK.id, limit: 3 } });
+
+    expect(result.isError).toBeFalsy();
+    expect(textOf(result).split('\n').slice(0, 2)).toEqual([
+      '30 cards are due now in "Spanish verbs"; here are the first 3, in session order:',
+      `1. [new] in "Spanish verbs" (deck id: ${API_DECK.id}, card id: ${API_CARDS[0]!.id}, direction: forward) ask: front 1 | answer: back 1`,
+    ]);
+    expect(result.structuredContent).toMatchObject({
+      deck: { id: API_DECK.id, title: 'Spanish verbs', cardCount: 30 },
+      cards: [{ prompt: 'front 1' }, { prompt: 'front 2' }, { prompt: 'front 3' }],
+      totalDue: 30,
+      libraryUrl: 'https://deck.club/decks',
+    });
+    const due = server.api.requests.findLast((url) => url.pathname === '/study/due');
+    expect(Object.fromEntries(due?.searchParams ?? [])).toEqual({
+      deckId: API_DECK.id,
+      limit: '3',
+    });
+  });
+
+  it('records a rating through the API, stamped with the AI client, for the model and for the view', async () => {
+    const result = await (
+      await connect(era)
+    ).callTool({
+      name: 'submit_review',
+      arguments: {
+        deckId: API_DECK.id,
+        cardId: API_CARDS[0]!.id,
+        rating: 'good',
+        idempotencyKey: `review-${era}-1`,
+      },
+    });
+
+    expect(result.isError).toBeFalsy();
+    expect(textOf(result)).toMatch(
+      new RegExp(
+        `^Recorded "good" for card ${API_CARDS[0]!.id} \\(forward\\) in deck ${API_DECK.id}\\. It is now in review and comes back in 1 day`,
+      ),
+    );
+    expect(result.structuredContent).toMatchObject({
+      deckId: API_DECK.id,
+      cardId: API_CARDS[0]!.id,
+      direction: 'forward',
+      rating: 'good',
+      state: 'review',
+      replayed: false,
+    });
+    expect(server.api.reviews).toEqual([
+      {
+        body: {
+          deckId: API_DECK.id,
+          cardId: API_CARDS[0]!.id,
+          direction: 'forward',
+          rating: 'good',
+        },
+        clientName: 'Claude',
+      },
+    ]);
+    expect(server.api.idempotencyKeys).toEqual([`review-${era}-1`]);
+  });
+
+  it('serves the study session view the get_due_cards tool links to', async () => {
+    const connected = await connect(era);
+    const getDueCards = (await connected.listTools()).tools.find(
+      (tool) => tool.name === 'get_due_cards',
+    );
+
+    const view = await connected.readResource({
+      uri: (getDueCards?._meta?.ui as { resourceUri: string }).resourceUri,
+    });
+
+    expect(view.contents[0]).toMatchObject({
+      uri: 'ui://deck-club/study-session.html',
+      mimeType: 'text/html;profile=mcp-app',
+    });
+    expect((view.contents[0] as { text: string }).text).toContain('Show answer');
+    expect((view.contents[0] as { text: string }).text).toContain('How well did you know it?');
+  });
+
+  it('reads the stats and today’s workload through the API, for the model and for the view', async () => {
     const result = await (await connect(era)).callTool({ name: 'get_stats', arguments: {} });
+
+    expect(result.isError).toBeFalsy();
+    expect(textOf(result).split('\n').slice(0, 3)).toEqual([
+      'Streak: 3 days in a row, including today.',
+      'Today: 10 reviews done; 10 cards still due (4 reviews, 6 new):',
+      `- "Spanish verbs" (id: ${API_DECK.id}): 4 reviews, 6 new`,
+    ]);
+    expect(result.structuredContent).toMatchObject({
+      streakDays: 3,
+      retention30d: 0.85,
+      weakCards: [{ cardId: API_CARDS[0]!.id, prompt: 'front 1', forgotten: 4 }],
+      dueToday: { dueReviews: 4, newCards: 6 },
+      decksDueToday: [{ id: API_DECK.id, url: `https://deck.club/decks/${API_DECK.id}` }],
+    });
+    const paths = server.api.requests.map((url) => url.pathname);
+    expect(paths).toEqual(expect.arrayContaining(['/study/stats', '/study/today']));
+  });
+
+  it('serves the stats view the get_stats tool links to', async () => {
+    const connected = await connect(era);
+    const getStats = (await connected.listTools()).tools.find((tool) => tool.name === 'get_stats');
+
+    const view = await connected.readResource({
+      uri: (getStats?._meta?.ui as { resourceUri: string }).resourceUri,
+    });
+
+    expect(view.contents[0]).toMatchObject({
+      uri: 'ui://deck-club/stats.html',
+      mimeType: 'text/html;profile=mcp-app',
+    });
+    expect((view.contents[0] as { text: string }).text).toContain('Cards you keep forgetting');
+  });
+
+  it('lists the user’s clubs through the API, for the model and for the view', async () => {
+    const result = await (await connect(era)).callTool({ name: 'list_clubs', arguments: {} });
+
+    expect(result.isError).toBeFalsy();
+    expect(textOf(result).split('\n').slice(0, 2)).toEqual([
+      'The user belongs to 1 club:',
+      `- "Spanish Fridays" (club id: ${API_CLUB.id}, the user is owner, 12 of 100 members, private, invite code: FRIDAY-42)`,
+    ]);
+    expect(result.structuredContent).toMatchObject({
+      clubCount: 1,
+      clubs: [
+        {
+          id: API_CLUB.id,
+          role: 'owner',
+          decks: [{ id: API_DECK.id, url: `https://deck.club/decks/${API_DECK.id}` }],
+        },
+      ],
+    });
+  });
+
+  it('serves the club list view the list_clubs tool links to', async () => {
+    const connected = await connect(era);
+    const listClubs = (await connected.listTools()).tools.find(
+      (tool) => tool.name === 'list_clubs',
+    );
+
+    const view = await connected.readResource({
+      uri: (listClubs?._meta?.ui as { resourceUri: string }).resourceUri,
+    });
+
+    expect(view.contents[0]).toMatchObject({
+      uri: 'ui://deck-club/club-list.html',
+      mimeType: 'text/html;profile=mcp-app',
+    });
+    expect((view.contents[0] as { text: string }).text).toContain('Your clubs');
+  });
+
+  it('answers a tool that is not built yet with a REJECTED tool result', async () => {
+    const result = await (
+      await connect(era)
+    ).callTool({ name: 'create_battle', arguments: { deckId: API_DECK.id } });
 
     expect(result.isError).toBe(true);
     expect(textOf(result)).toMatch(/^REJECTED: NOT_IMPLEMENTED\./);
@@ -459,6 +622,175 @@ describe('get_deck authorization', () => {
 
     expect(textOf(result)).toMatch(/^REJECTED: VALIDATION_FAILED\./);
     await connected.close();
+  });
+});
+
+describe('get_due_cards authorization', () => {
+  it('relays DECK_NOT_FOUND for another user’s deck, without its cards', async () => {
+    const ben = await connectClient(server.endpoint, { token: TOKENS.ben, era: 'modern' });
+
+    const result = await ben.callTool({
+      name: 'get_due_cards',
+      arguments: { deckId: API_DECK.id },
+    });
+
+    expect(result.isError).toBe(true);
+    expect(textOf(result)).toBe(
+      'REJECTED: DECK_NOT_FOUND. No deck with that id exists in your library.',
+    );
+    expect(JSON.stringify(result)).not.toContain('front 1');
+    await ben.close();
+  });
+
+  it('reads only the caller’s own schedule', async () => {
+    const ben = await connectClient(server.endpoint, { token: TOKENS.ben, era: 'modern' });
+
+    const result = await ben.callTool({ name: 'get_due_cards', arguments: {} });
+
+    expect(textOf(result)).toMatch(/^Nothing is due right now in any deck/);
+    expect(result.structuredContent).toMatchObject({ deck: null, cards: [], totalDue: 0 });
+    await ben.close();
+  });
+});
+
+describe('submit_review over HTTP', () => {
+  const review = {
+    deckId: API_DECK.id,
+    cardId: API_CARDS[0]!.id,
+    rating: 'good',
+  };
+
+  it('records a retried rating once when it carries the same idempotencyKey', async () => {
+    const connected = await connectClient(server.endpoint, { token: TOKENS.ana, era: 'modern' });
+    const call = {
+      name: 'submit_review',
+      arguments: { ...review, idempotencyKey: 'review-retry-1' },
+    };
+
+    const first = await connected.callTool(call);
+    const retry = await connected.callTool(call);
+
+    expect(server.api.reviews).toHaveLength(1);
+    expect(textOf(retry)).toMatch(/^Already done: an earlier submit_review call/);
+    expect(retry.structuredContent).toMatchObject({
+      reviewId: (first.structuredContent as { reviewId: string }).reviewId,
+      replayed: true,
+    });
+    await connected.close();
+  });
+
+  it('rates a card with the arguments the study session view sends, once however often pressed', async () => {
+    const connected = await connectClient(server.endpoint, { token: TOKENS.ana, era: 'modern' });
+    const due = await connected.callTool({
+      name: 'get_due_cards',
+      arguments: { deckId: API_DECK.id, limit: 2 },
+    });
+    const session = readDueCards(due);
+    const call = session === null ? null : reviewArguments(session, 1, 'easy');
+
+    const pressed = await connected.callTool({ name: 'submit_review', arguments: call ?? {} });
+    const pressedAgain = await connected.callTool({ name: 'submit_review', arguments: call ?? {} });
+
+    expect(server.api.reviews.map((each) => each.body)).toEqual([
+      { deckId: API_DECK.id, cardId: API_CARDS[1]!.id, direction: 'forward', rating: 'easy' },
+    ]);
+    const recorded = readReview(pressed);
+    expect(
+      session === null || recorded === null ? null : withReview(session, 1, recorded),
+    ).toMatchObject({
+      reviewed: { 1: { cardId: API_CARDS[1]!.id, rating: 'easy', replayed: false } },
+    });
+    expect(readReview(pressedAgain)).toMatchObject({ replayed: true });
+    await connected.close();
+  });
+
+  it('relays DECK_NOT_FOUND for another user’s deck, and records nothing', async () => {
+    const ben = await connectClient(server.endpoint, { token: TOKENS.ben, era: 'modern' });
+
+    const result = await ben.callTool({ name: 'submit_review', arguments: review });
+
+    expect(textOf(result)).toBe(
+      'REJECTED: DECK_NOT_FOUND. No deck with that id exists in your library.',
+    );
+    expect(server.api.reviews).toEqual([]);
+    await ben.close();
+  });
+
+  it('relays DIRECTION_NOT_STUDIED for the reverse side of a basic card', async () => {
+    const connected = await connectClient(server.endpoint, { token: TOKENS.ana, era: 'modern' });
+
+    const result = await connected.callTool({
+      name: 'submit_review',
+      arguments: { ...review, direction: 'reverse' },
+    });
+
+    expect(textOf(result)).toBe(
+      'REJECTED: DIRECTION_NOT_STUDIED. Only reversible cards are studied in the reverse direction.',
+    );
+    expect(server.api.reviews).toEqual([]);
+    await connected.close();
+  });
+
+  it('tells the AI how to retry safely when the API cannot be reached', async () => {
+    const connected = await connectClient(server.endpoint, { token: TOKENS.ana, era: 'modern' });
+    server.api.healthy = false;
+
+    try {
+      const result = await connected.callTool({
+        name: 'submit_review',
+        arguments: { ...review, idempotencyKey: 'review-down-1' },
+      });
+
+      expect(textOf(result)).toBe(
+        'REJECTED: UPSTREAM_UNAVAILABLE. Deck Club did not confirm that the rating was recorded. Call submit_review again with exactly the same arguments and the same idempotencyKey: it is never done twice.',
+      );
+    } finally {
+      server.api.healthy = true;
+      await connected.close();
+    }
+  });
+});
+
+describe('get_stats over HTTP', () => {
+  it('reads only the caller’s own progress', async () => {
+    const ben = await connectClient(server.endpoint, { token: TOKENS.ben, era: 'modern' });
+
+    const result = await ben.callTool({ name: 'get_stats', arguments: {} });
+
+    expect(textOf(result)).toMatch(/^Streak: none yet\./);
+    expect(result.structuredContent).toMatchObject({
+      totalReviews: 0,
+      weakCards: [],
+      decksDueToday: [],
+    });
+    expect(JSON.stringify(result)).not.toContain('front 1');
+    await ben.close();
+  });
+
+  it('relays UPSTREAM_UNAVAILABLE when the API cannot be reached, never zeros', async () => {
+    const connected = await connectClient(server.endpoint, { token: TOKENS.ana, era: 'modern' });
+    server.api.healthy = false;
+
+    try {
+      const result = await connected.callTool({ name: 'get_stats', arguments: {} });
+
+      expect(textOf(result)).toMatch(/^REJECTED: UPSTREAM_UNAVAILABLE\./);
+    } finally {
+      server.api.healthy = true;
+      await connected.close();
+    }
+  });
+});
+
+describe('list_clubs over HTTP', () => {
+  it('lists only the caller’s own clubs', async () => {
+    const ben = await connectClient(server.endpoint, { token: TOKENS.ben, era: 'modern' });
+
+    const result = await ben.callTool({ name: 'list_clubs', arguments: {} });
+
+    expect(textOf(result)).toMatch(/^The user is not in any club yet\./);
+    expect(JSON.stringify(result)).not.toContain('FRIDAY-42');
+    await ben.close();
   });
 });
 

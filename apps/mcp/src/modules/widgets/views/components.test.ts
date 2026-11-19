@@ -2,27 +2,12 @@ import { describe, expect, it } from 'vitest';
 import {
   actionButton,
   chip,
-  countLabel,
   deckChip,
   emptyState,
   notice,
   pageHeader,
   searchForm,
 } from './components.js';
-
-describe('countLabel', () => {
-  it('uses the singular for one and the plural otherwise', () => {
-    expect([countLabel(1, 'card'), countLabel(0, 'card'), countLabel(42, 'card')]).toEqual([
-      '1 card',
-      '0 cards',
-      '42 cards',
-    ]);
-  });
-
-  it('takes an irregular plural', () => {
-    expect(countLabel(2, 'query', 'queries')).toBe('2 queries');
-  });
-});
 
 describe('pageHeader', () => {
   it('puts the title on the brand’s highlighter swipe', () => {
@@ -68,6 +53,15 @@ describe('actionButton', () => {
     expect(html).toContain('aria-label="Open Spanish in Deck Club"');
   });
 
+  it('can take the focus after the view’s own action redraws it', () => {
+    expect(
+      actionButton({ label: 'Next cards', action: 'next', value: '1', focus: true }),
+    ).toContain('data-value="1" data-focus>');
+    expect(actionButton({ label: 'Next cards', action: 'next', value: '1' })).not.toContain(
+      'data-focus',
+    );
+  });
+
   it('escapes a value, so quotes cannot break out of the attribute', () => {
     const html = actionButton({
       label: 'Ask',
@@ -85,6 +79,11 @@ describe('chip', () => {
       '<span class="chip chip-mint">Added by Claude</span>',
     );
     expect(chip('es', 'paper', 'Language: es')).toContain('aria-label="Language: es"');
+  });
+
+  it('comes in the rose and peach the rating chips use', () => {
+    expect(chip('Again', 'rose')).toBe('<span class="chip chip-rose">Again</span>');
+    expect(chip('Hard', 'peach')).toContain('chip-peach');
   });
 
   it('escapes its text', () => {

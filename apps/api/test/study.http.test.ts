@@ -132,6 +132,45 @@ describe('study over HTTP, on real SQLite', () => {
     });
   });
 
+  it('lists a card forgotten twice among the weak cards of the stats', async () => {
+    const deck = await deckWithCards('ana', [
+      { front: 'hablar', back: 'to speak' },
+      { front: 'comer', back: 'to eat' },
+    ]);
+    // One batch shares a timestamp, so the due order of its cards is not fixed: find them by prompt.
+    const { cards } = await due('ana');
+    const hablar = cards.find((card) => card.prompt === 'hablar');
+    const comer = cards.find((card) => card.prompt === 'comer');
+    const rate = (cardId: string) =>
+      app.inject({
+        method: 'POST',
+        url: '/study/reviews',
+        headers: signedInAs('ana'),
+        payload: { deckId: deck.id, cardId, rating: 'again' },
+      });
+    await rate(hablar!.cardId);
+    await rate(hablar!.cardId);
+    await rate(comer!.cardId);
+
+    const stats = (
+      await app.inject({ method: 'GET', url: '/study/stats', headers: signedInAs('ana') })
+    ).json<StudyStats>();
+    const bens = (
+      await app.inject({ method: 'GET', url: '/study/stats', headers: signedInAs('ben') })
+    ).json<StudyStats>();
+
+    expect(stats.weakCards).toEqual([
+      expect.objectContaining({
+        cardId: hablar!.cardId,
+        deckTitle: 'Spanish',
+        prompt: 'hablar',
+        answer: 'to speak',
+        forgotten: 2,
+      }),
+    ]);
+    expect(bens.weakCards).toEqual([]);
+  });
+
   it('rejects an invalid rating with VALIDATION_FAILED', async () => {
     const deck = await deckWithCards('ana', [{ front: 'a', back: 'b' }]);
     const [card] = (await due('ana')).cards;

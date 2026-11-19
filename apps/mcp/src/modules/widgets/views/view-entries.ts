@@ -14,4 +14,7 @@ export const VIEW_ENTRIES: Readonly<Partial<Record<WidgetKey, string>>> = {
   cardsAdded: 'src/modules/widgets/views/browser/cards-added.view.ts',
   cardUpdated: 'src/modules/widgets/views/browser/card-updated.view.ts',
   cardsDeleted: 'src/modules/widgets/views/browser/cards-deleted.view.ts',
+  studySession: 'src/modules/widgets/views/browser/study-session.view.ts',
+  stats: 'src/modules/widgets/views/browser/stats.view.ts',
+  clubList: 'src/modules/widgets/views/browser/club-list.view.ts',
 };

@@ -22,6 +22,8 @@ export const WIDGET_URIS = {
   studySession: 'ui://deck-club/study-session.html',
   /** Streak, today's progress and retention (spec 6, stats). */
   stats: 'ui://deck-club/stats.html',
+  /** The clubs the user belongs to and their shared decks, shown with the result of list_clubs. */
+  clubList: 'ui://deck-club/club-list.html',
 } as const;
 export type WidgetKey = keyof typeof WIDGET_URIS;
 export type WidgetUri = (typeof WIDGET_URIS)[WidgetKey];

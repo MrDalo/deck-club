@@ -6,6 +6,9 @@ coverage
 pnpm-lock.yaml
 next-env.d.ts
 apps/api/drizzle/meta
+storybook-static
+# shadcn/ui primitives stay exactly as the shadcn CLI writes them (packages/ui/ui-lock.json)
+packages/ui/src/ui
 .claude/worktrees
 # Vendored skill pack, synced from upstream; reformatting would make every sync a diff.
 .agents
