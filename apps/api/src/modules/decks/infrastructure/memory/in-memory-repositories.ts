@@ -24,6 +24,13 @@ export class InMemoryDeckStore {
       if (deck?.deletedAt !== null) return Promise.resolve(null);
       return Promise.resolve(this.withCount(deck));
     },
+    listByIds: (deckIds) =>
+      Promise.resolve(
+        deckIds
+          .map((deckId) => this.decks.get(deckId))
+          .filter((deck): deck is Deck => deck?.deletedAt === null)
+          .map((deck) => this.withCount(deck)),
+      ),
     insert: (deck) => {
       this.decks.set(deck.id, deck);
       return Promise.resolve();

@@ -20,6 +20,7 @@
     "format:check": "prettier --check .",
     "deadcode": "knip",
     "test": "turbo run test",
+    "storybook": "pnpm --filter @deck-club/ui storybook",
     "db:generate": "turbo run db:generate --filter=@deck-club/api",
     "db:migrate": "turbo run db:migrate --filter=@deck-club/api",
     "clean": "turbo run clean && rimraf .turbo",

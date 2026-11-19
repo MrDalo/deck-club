@@ -64,7 +64,7 @@ export function createStudyTestKit(): ReturnType<typeof createDecksTestKit> & {
     study,
     queue: new StudyQueueService(facade, study, scheduler, decksKit.clock),
     reviews: new ReviewService(facade, study, scheduler, { clock: decksKit.clock, ids: reviewIds }),
-    stats: new StudyStatsService(study, decksKit.clock),
+    stats: new StudyStatsService(facade, study, decksKit.clock),
     seedDeck,
   };
 }

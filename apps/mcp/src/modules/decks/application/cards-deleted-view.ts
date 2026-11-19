@@ -1,6 +1,7 @@
 import type { Card, Deck, DeleteCardsOutput } from '@deck-club/contracts';
+import { deckUrl } from '../../../common/web/web-links.js';
 import { describeCard, toDeckCard } from './deck-detail-view.js';
-import { cardCountLabel, deckUrl } from './deck-library-view.js';
+import { cardCountLabel } from './deck-library-view.js';
 
 /** What happened to each id of a `delete_cards` call. */
 export type DeleteOutcome = {

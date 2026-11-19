@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, count, desc, eq, isNull } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, isNull } from 'drizzle-orm';
 import { DATABASE, type Database } from '../../../../infra/database/database.js';
 import type { DeckRepository, DeckWithCardCount } from '../../application/ports/deck-repository.js';
 import type { Deck } from '../../domain/deck.js';
@@ -27,6 +27,14 @@ export class DrizzleDeckRepository implements DeckRepository {
       .where(and(eq(decksTable.id, deckId), isNull(decksTable.deletedAt)))
       .groupBy(decksTable.id);
     return row === undefined ? null : { deck: toDeck(row.deck), cardCount: row.cardCount };
+  }
+
+  async listByIds(deckIds: readonly string[]): Promise<DeckWithCardCount[]> {
+    if (deckIds.length === 0) return [];
+    const rows = await this.selectWithCount()
+      .where(and(inArray(decksTable.id, [...deckIds]), isNull(decksTable.deletedAt)))
+      .groupBy(decksTable.id);
+    return rows.map((row) => ({ deck: toDeck(row.deck), cardCount: row.cardCount }));
   }
 
   async insert(deck: Deck): Promise<void> {

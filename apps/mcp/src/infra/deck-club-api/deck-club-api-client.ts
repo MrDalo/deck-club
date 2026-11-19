@@ -6,6 +6,7 @@ import {
 } from '@deck-club/contracts';
 import type { ZodType } from 'zod';
 import { DeckClubError } from '../../common/errors/deck-club-error.js';
+import type { McpCaller } from '../../common/mcp/mcp-caller.js';
 import type { FetchFunction } from '../../common/http/fetch-function.js';
 
 /** Outbound timeout to the core API (rule 20-backend: no infinite waits). */
@@ -16,6 +17,17 @@ export type ApiCredentials = {
   accessToken: string;
   clientName: string;
 };
+
+/**
+ * The credentials of a tool call: the caller's own token, which the API
+ * verifies again, and the AI client's name, which it records as provenance
+ * ("Added by Claude"). Every port adapter sends these, never its own.
+ * @param caller - the verified caller of the tool
+ * @returns the credentials to send
+ */
+export function credentialsOf(caller: McpCaller): ApiCredentials {
+  return { accessToken: caller.accessToken, clientName: caller.clientName };
+}
 
 /** One call to the core API. The response body is parsed with `schema`, a contracts schema. */
 export type ApiRequest<Output> = {

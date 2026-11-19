@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { testDeck } from '../testing/fake-decks-api.js';
-import { deckUrl, formatDeckLibrary, toDeckLibrary } from './deck-library-view.js';
+import { formatDeckLibrary, toDeckLibrary } from './deck-library-view.js';
 
 const WEB_URL = 'https://deck.club';
 const SPANISH = testDeck({
@@ -14,18 +14,6 @@ const BIOLOGY = testDeck({
   id: '00000000-0000-4000-8000-000000000002',
   title: 'Biology',
   cardCount: 1,
-});
-
-describe('deckUrl', () => {
-  it('points at the deck page of the web app', () => {
-    expect(deckUrl(WEB_URL, SPANISH.id)).toBe(`https://deck.club/decks/${SPANISH.id}`);
-  });
-
-  it('keeps working when the web app sits on a path', () => {
-    expect(deckUrl('https://deck.club/app/', SPANISH.id)).toBe(
-      `https://deck.club/decks/${SPANISH.id}`,
-    );
-  });
 });
 
 describe('toDeckLibrary', () => {

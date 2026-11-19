@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { z } from 'zod';
 import { CARD_LIMITS } from './card.js';
 import {
   AddCardsOutputSchema,
@@ -9,8 +10,11 @@ import {
   DeleteCardsOutputSchema,
   DeleteCardsToolInputSchema,
   GetDeckToolInputSchema,
+  GetDueCardsOutputSchema,
   GetDueCardsToolInputSchema,
+  GetStatsOutputSchema,
   IdempotencyKeySchema,
+  ListClubsOutputSchema,
   MCP_SCOPES,
   MCP_TOOL_NAMES,
   MCP_TOOL_SCOPES,
@@ -19,6 +23,8 @@ import {
   ListDecksOutputSchema,
   SearchCardsOutputSchema,
   SearchCardsToolInputSchema,
+  SubmitReviewOutputSchema,
+  SubmitReviewToolInputSchema,
   UpdateCardOutputSchema,
   UpdateCardToolInputSchema,
 } from './mcp-tools.js';
@@ -140,6 +146,246 @@ describe('GetDueCardsToolInputSchema', () => {
 
   it('rejects more cards than one request may return', () => {
     expect(GetDueCardsToolInputSchema.safeParse({ limit: 51 }).success).toBe(false);
+  });
+});
+
+describe('GetDueCardsOutputSchema', () => {
+  const card = {
+    deckId: DECK_ID,
+    deckTitle: 'Spanish verbs',
+    cardId: CARD_ID,
+    direction: 'forward',
+    cardType: 'basic',
+    state: 'new',
+    prompt: 'hablar',
+    answer: 'to speak',
+    extra: '',
+    nextDue: {
+      again: '2026-11-17T10:01:00.000Z',
+      hard: '2026-11-17T10:06:00.000Z',
+      good: '2026-11-17T10:10:00.000Z',
+      easy: '2026-11-20T10:00:00.000Z',
+    },
+  };
+  const session = {
+    deck: null,
+    cards: [card],
+    totalDue: 12,
+    libraryUrl: 'https://deck.club/decks',
+    asOf: '2026-11-17T10:00:00.000Z',
+  };
+
+  it('accepts the first cards of a session across every deck', () => {
+    expect(GetDueCardsOutputSchema.parse(session)).toEqual(session);
+  });
+
+  it('accepts a session limited to one deck with nothing due', () => {
+    expect(
+      GetDueCardsOutputSchema.safeParse({
+        ...session,
+        deck: {
+          id: DECK_ID,
+          title: 'Spanish verbs',
+          url: 'https://deck.club/decks/x',
+          cardCount: 0,
+        },
+        cards: [],
+        totalDue: 0,
+      }).success,
+    ).toBe(true);
+  });
+
+  it('keeps when each rating brings the card back, for the view’s rating buttons', () => {
+    expect(GetDueCardsOutputSchema.parse(session).cards[0]?.nextDue.easy).toBe(
+      '2026-11-20T10:00:00.000Z',
+    );
+  });
+
+  it('rejects a result without the time its hints count from', () => {
+    const { asOf: _asOf, ...withoutTime } = session;
+
+    expect(GetDueCardsOutputSchema.safeParse(withoutTime).success).toBe(false);
+  });
+
+  it('rejects a study state FSRS does not have', () => {
+    expect(
+      GetDueCardsOutputSchema.safeParse({ ...session, cards: [{ ...card, state: 'mastered' }] })
+        .success,
+    ).toBe(false);
+  });
+
+  it('rejects more cards than one request may return', () => {
+    const cards = Array.from({ length: 51 }, () => card);
+
+    expect(GetDueCardsOutputSchema.safeParse({ ...session, cards, totalDue: 51 }).success).toBe(
+      false,
+    );
+  });
+});
+
+describe('SubmitReviewToolInputSchema', () => {
+  it('asks for the forward side unless told otherwise, and needs no key', () => {
+    expect(
+      SubmitReviewToolInputSchema.parse({ deckId: DECK_ID, cardId: CARD_ID, rating: 'good' }),
+    ).toEqual({ deckId: DECK_ID, cardId: CARD_ID, direction: 'forward', rating: 'good' });
+  });
+
+  it('accepts an idempotency key, so a retried rating is recorded once', () => {
+    expect(
+      SubmitReviewToolInputSchema.parse({
+        deckId: DECK_ID,
+        cardId: CARD_ID,
+        direction: 'reverse',
+        rating: 'again',
+        idempotencyKey: 'review-0001',
+      }).idempotencyKey,
+    ).toBe('review-0001');
+  });
+
+  it('rejects a rating that is not one of the four', () => {
+    expect(
+      SubmitReviewToolInputSchema.safeParse({ deckId: DECK_ID, cardId: CARD_ID, rating: 'perfect' })
+        .success,
+    ).toBe(false);
+  });
+
+  it('rejects a time over an hour, and a key outside the safe set', () => {
+    const review = { deckId: DECK_ID, cardId: CARD_ID, rating: 'good' };
+
+    expect(
+      SubmitReviewToolInputSchema.safeParse({ ...review, durationMs: 3_600_001 }).success,
+    ).toBe(false);
+    expect(
+      SubmitReviewToolInputSchema.safeParse({ ...review, idempotencyKey: 'key with spaces' })
+        .success,
+    ).toBe(false);
+  });
+
+  it('describes every argument in the JSON Schema the AI reads', () => {
+    const { properties = {} } = z.toJSONSchema(SubmitReviewToolInputSchema, { io: 'input' });
+
+    expect(Object.keys(properties)).toHaveLength(6);
+    for (const property of Object.values(properties))
+      expect((property as { description?: string }).description?.length).toBeGreaterThan(10);
+  });
+});
+
+describe('SubmitReviewOutputSchema', () => {
+  const recorded = {
+    reviewId: '00000000-0000-4000-8000-000000000003',
+    deckId: DECK_ID,
+    cardId: CARD_ID,
+    direction: 'forward',
+    rating: 'good',
+    state: 'review',
+    nextDueAt: '2026-11-20T10:00:00.000Z',
+    replayed: false,
+    asOf: '2026-11-17T10:00:00.000Z',
+  };
+
+  it('accepts a recorded review with when the card comes back', () => {
+    expect(SubmitReviewOutputSchema.parse(recorded)).toEqual(recorded);
+  });
+
+  it('rejects a review without its deck, which the view needs to match the card', () => {
+    const { deckId: _deckId, ...withoutDeck } = recorded;
+
+    expect(SubmitReviewOutputSchema.safeParse(withoutDeck).success).toBe(false);
+  });
+});
+
+describe('GetStatsOutputSchema', () => {
+  const stats = {
+    streakDays: 4,
+    reviewedToday: 12,
+    totalReviews: 230,
+    retention30d: 0.87,
+    weakCards: [],
+    dueToday: { dueReviews: 5, newCards: 3 },
+    decksDueToday: [
+      {
+        id: DECK_ID,
+        title: 'Spanish verbs',
+        url: `https://deck.club/decks/${DECK_ID}`,
+        dueReviews: 5,
+        newCards: 3,
+      },
+    ],
+    libraryUrl: 'https://deck.club/decks',
+  };
+
+  it('accepts the API’s stats with what is still due today, per deck', () => {
+    expect(GetStatsOutputSchema.parse(stats)).toEqual(stats);
+  });
+
+  it('accepts a user who has not studied yet', () => {
+    expect(
+      GetStatsOutputSchema.safeParse({
+        ...stats,
+        streakDays: 0,
+        reviewedToday: 0,
+        totalReviews: 0,
+        retention30d: null,
+        dueToday: { dueReviews: 0, newCards: 0 },
+        decksDueToday: [],
+      }).success,
+    ).toBe(true);
+  });
+
+  it('rejects a deck without the link the view opens', () => {
+    const [deck] = stats.decksDueToday;
+
+    expect(
+      GetStatsOutputSchema.safeParse({ ...stats, decksDueToday: [{ ...deck, url: 'spanish' }] })
+        .success,
+    ).toBe(false);
+  });
+
+  it('rejects a retention outside 0 to 1', () => {
+    expect(GetStatsOutputSchema.safeParse({ ...stats, retention30d: 87 }).success).toBe(false);
+  });
+});
+
+describe('ListClubsOutputSchema', () => {
+  const club = {
+    id: '00000000-0000-4000-8000-0000000000c1',
+    name: 'Spanish Fridays',
+    description: '',
+    visibility: 'private',
+    role: 'member',
+    memberCount: 12,
+    memberLimit: 100,
+    inviteCode: null,
+    decks: [
+      {
+        id: DECK_ID,
+        title: 'Spanish verbs',
+        description: '',
+        language: 'es',
+        cardCount: 40,
+        url: `https://deck.club/decks/${DECK_ID}`,
+      },
+    ],
+  };
+  const list = { clubs: [club], clubCount: 1, libraryUrl: 'https://deck.club/decks' };
+
+  it('accepts clubs whose decks are library tiles the view can open', () => {
+    expect(ListClubsOutputSchema.parse(list)).toEqual(list);
+  });
+
+  it('accepts a user in no club', () => {
+    expect(ListClubsOutputSchema.safeParse({ ...list, clubs: [], clubCount: 0 }).success).toBe(
+      true,
+    );
+  });
+
+  it('rejects a club deck without the link the view needs', () => {
+    const { url: _url, ...withoutLink } = club.decks[0]!;
+
+    expect(
+      ListClubsOutputSchema.safeParse({ ...list, clubs: [{ ...club, decks: [withoutLink] }] })
+        .success,
+    ).toBe(false);
   });
 });
 

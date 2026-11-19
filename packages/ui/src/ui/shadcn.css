@@ -1,0 +1,7 @@
+/*
+ * Owned by the shadcn CLI: `pnpm ui:add` writes the CSS variables an added
+ * item ships (sidebar, chart…) here. Nothing imports this file, so the CLI
+ * can never overwrite the brand. When a diff adds a variable, map it to a
+ * brand colour in src/styles/theme.css.
+ */
+@import 'tailwindcss';

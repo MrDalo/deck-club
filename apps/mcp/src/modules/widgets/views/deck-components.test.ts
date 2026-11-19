@@ -23,6 +23,13 @@ describe('deckTile', () => {
     expect(html).toContain('<button>Open</button>');
   });
 
+  it('titles the deck one level down under a heading of its own, e.g. its club', () => {
+    const html = deckTile(DECK, { actions: '', headingLevel: 3 });
+
+    expect(html).toContain('<h3>Spanish verbs</h3>');
+    expect(html).not.toContain('<h2>');
+  });
+
   it('adds extra chips after the count', () => {
     expect(
       deckTile(DECK, { actions: '', extraChips: ['<span class="chip">Private</span>'] }),

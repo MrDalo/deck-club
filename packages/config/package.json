@@ -9,6 +9,7 @@
     "./eslint/library": "./eslint/library.js",
     "./eslint/nest": "./eslint/nest.js",
     "./eslint/web": "./eslint/web.js",
+    "./eslint/react-library": "./eslint/react-library.js",
     "./prettier": "./prettier/index.js",
     "./tsconfig/*": "./tsconfig/*",
     "./vitest": {
@@ -25,6 +26,7 @@
     "eslint-import-resolver-typescript": "catalog:",
     "eslint-plugin-boundaries": "catalog:",
     "eslint-plugin-react-hooks": "catalog:",
+    "eslint-plugin-storybook": "catalog:",
     "globals": "catalog:",
     "typescript": "catalog:",
     "typescript-eslint": "catalog:",

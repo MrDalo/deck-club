@@ -16,7 +16,7 @@ export const SERVER_INSTRUCTIONS = [
   'Find a deck’s id with list_decks before working with it; never invent deck or card ids.',
   'To make cards, write one fact per card with a short answer, check for duplicates with search_cards, then call add_cards.',
   'To quiz the user, call get_due_cards, ask one card at a time, judge the answer fairly, and record it with submit_review.',
-  'Send a new idempotencyKey (e.g. a UUID) with each create_deck and add_cards call, and reuse it only to retry that same call: a retry with the same key never writes twice.',
+  'Send a new idempotencyKey (e.g. a UUID) with each create_deck, add_cards and submit_review call, and reuse it only to retry that same call: a retry with the same key never writes twice.',
   'Confirm with the user before deleting anything.',
   'When a tool answers "REJECTED: <CODE>. <detail>", tell the user the detail in plain words; do not retry a refusal unchanged unless its detail tells you to.',
 ].join(' ');

@@ -1,9 +1,12 @@
 import {
   FindWeakSpotsPromptArgsSchema,
+  GetDueCardsOutputSchema,
   GetDueCardsToolInputSchema,
+  GetStatsOutputSchema,
   GetStatsToolInputSchema,
   MCP_RESOURCE_URIS,
   QuizMePromptArgsSchema,
+  SubmitReviewOutputSchema,
   SubmitReviewToolInputSchema,
 } from '@deck-club/contracts';
 import type { StandardSchemaWithJSON } from '@modelcontextprotocol/server';
@@ -17,8 +20,9 @@ export const STUDY_TOOLS = {
     name: 'get_due_cards',
     title: 'Get due cards',
     description:
-      'Get the next cards due for review, for one deck or all decks, in session order and within the user’s daily limits, with fronts and backs. Use it to quiz the user: ask one card at a time and never show the answer before the user replies.',
+      'Get the next cards due for review, for one deck or all decks, in session order and within the user’s daily limits, with what to ask and the answer. Use it to quiz the user: ask one card at a time and never show the answer before the user replies. Each card gives the deck id, card id and direction to pass to submit_review. The user sees the cards in a study view with the answers hidden.',
     inputSchema: GetDueCardsToolInputSchema,
+    outputSchema: GetDueCardsOutputSchema,
     annotations: { readOnlyHint: true },
     widgetUri: WIDGET_URIS.studySession,
   },
@@ -26,16 +30,18 @@ export const STUDY_TOOLS = {
     name: 'submit_review',
     title: 'Submit review',
     description:
-      'Record how well the user remembered one card: "again" (forgot), "hard", "good" or "easy". Judge the user’s own answer fairly and explain mistakes; if the user says "mark that as again", do so. Returns when the card is due next.',
+      'Record how well the user remembered one card from get_due_cards: "again" (forgot), "hard", "good" or "easy". Call it once per card, after the user answered: judge their own words fairly and explain mistakes; if the user says "mark that as again", do so. Pass the deck id, card id and direction get_due_cards gave, and a new idempotencyKey (e.g. a UUID) every time, reused only to retry the same call: a second call without it rates the card twice. Returns when the card comes back. Cards the user rated in the study view are already recorded.',
     inputSchema: SubmitReviewToolInputSchema,
+    outputSchema: SubmitReviewOutputSchema,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
   },
   getStats: {
     name: 'get_stats',
     title: 'Get stats',
     description:
-      'The user’s streak, today’s progress, 30-day retention and the cards they struggle with most. Use it when the user asks how they are doing or what to focus on.',
+      'The user’s streak, today’s progress (reviews done, cards still due per deck), 30-day retention and the cards they keep forgetting (forgotten at least twice in 30 days), with the ids to act on them. Use it when the user asks how they are doing or what to focus on. Encourage, never scold; offer a quiz with get_due_cards, and suggest clearer cards with update_card only after the user agrees.',
     inputSchema: GetStatsToolInputSchema,
+    outputSchema: GetStatsOutputSchema,
     annotations: { readOnlyHint: true },
     widgetUri: WIDGET_URIS.stats,
   },

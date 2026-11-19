@@ -128,12 +128,41 @@ export const TodaySchema = z.object({
 });
 export type Today = z.infer<typeof TodaySchema>;
 
-/** Response of `GET /study/stats` and the `get_stats` MCP tool (spec 6, stats definitions). */
+/**
+ * Which cards the stats call weak (spec 9, `get_stats`: "weak cards"): a card
+ * side the user forgot (rated Again) at least `minForgotten` times in the last
+ * `windowDays` days. The most forgotten come first, at most `shown` of them.
+ */
+export const WEAK_CARD_RULE = {
+  windowDays: 30,
+  minForgotten: 2,
+  shown: 5,
+} as const;
+
+/** One card side the user keeps forgetting, oriented like a due card. */
+export const WeakCardSchema = z.object({
+  deckId: IdSchema,
+  deckTitle: z.string(),
+  cardId: IdSchema,
+  direction: StudyDirectionSchema,
+  cardType: CardTypeSchema,
+  prompt: z.string(),
+  answer: z.string(),
+  extra: z.string(),
+  /** How often it was rated Again within the rule's window. */
+  forgotten: z.number().int().min(WEAK_CARD_RULE.minForgotten),
+  lastForgottenAt: TimestampSchema,
+});
+export type WeakCard = z.infer<typeof WeakCardSchema>;
+
+/** Response of `GET /study/stats`, read by the `get_stats` MCP tool (spec 6, stats definitions). */
 export const StudyStatsSchema = z.object({
   streakDays: z.number().int().nonnegative(),
   reviewedToday: z.number().int().nonnegative(),
   totalReviews: z.number().int().nonnegative(),
   /** Share of review-state cards rated Hard, Good or Easy in the last 30 days; null with no such reviews. */
   retention30d: z.number().min(0).max(1).nullable(),
+  /** The cards the user keeps forgetting ({@link WEAK_CARD_RULE}), most forgotten first. */
+  weakCards: z.array(WeakCardSchema).max(WEAK_CARD_RULE.shown),
 });
 export type StudyStats = z.infer<typeof StudyStatsSchema>;

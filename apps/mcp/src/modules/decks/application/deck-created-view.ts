@@ -1,4 +1,5 @@
 import type { CreateDeckOutput, Deck } from '@deck-club/contracts';
+import { libraryUrl } from '../../../common/web/web-links.js';
 import { toDeckSummary } from './deck-library-view.js';
 
 /**
@@ -11,7 +12,7 @@ import { toDeckSummary } from './deck-library-view.js';
 export function toCreatedDeck(deck: Deck, webUrl: string): CreateDeckOutput {
   return {
     deck: { ...toDeckSummary(deck, webUrl), tags: deck.tags, visibility: deck.visibility },
-    libraryUrl: new URL('/decks', webUrl).toString(),
+    libraryUrl: libraryUrl(webUrl),
   };
 }
 

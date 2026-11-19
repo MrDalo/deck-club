@@ -21,6 +21,7 @@ and has no paid tier.
 | `apps/api`           | NestJS core API: modular monolith of hexagonal modules, SQLite via Drizzle + libSQL           |
 | `apps/mcp`           | NestJS MCP server (SDK v2, stateless Streamable HTTP, OAuth 2.1 via Supabase, MCP Apps views) |
 | `packages/contracts` | Zod schemas and types shared by all three                                                     |
+| `packages/ui`        | Component library: shadcn/ui primitives in branded components, pastel theme, Storybook        |
 | `packages/config`    | ESLint, Prettier, TypeScript and Vitest presets                                               |
 
 Architecture: [docs/architecture.md](docs/architecture.md), the MCP server:
@@ -86,10 +87,11 @@ claude mcp add --transport http deck-club http://localhost:4100/mcp --header "Au
 
 Then ask: "What decks do I have?", "Show me my Spanish deck", "Do I already
 have a card about mitosis?", "Make me a deck for my biology exam", "Add 10
-cards about cell division to it", "Fix the answer on the mitosis card" or
-"Delete the cards about meiosis" — `list_decks`, `get_deck`, `search_cards`,
-`create_deck`, `add_cards`, `update_card` and `delete_cards` answer, and a
-host
+cards about cell division to it", "Fix the answer on the mitosis card",
+"Delete the cards about meiosis", "Quiz me on what is due today" or "How
+am I doing?" — `list_decks`, `get_deck`, `search_cards`, `create_deck`,
+`add_cards`, `update_card`, `delete_cards`, `get_due_cards`,
+`submit_review` and `get_stats` answer, and a host
 that supports MCP Apps (Claude, ChatGPT, VS Code…) draws the result in the
 chat.
 The other tools, prompts and resources are listed but answer
@@ -97,15 +99,16 @@ The other tools, prompts and resources are listed but answer
 
 ## Development
 
-| Task                 | Command                             |
-| -------------------- | ----------------------------------- |
-| Type-check           | `pnpm typecheck`                    |
-| Lint (zero warnings) | `pnpm lint`                         |
-| Format               | `pnpm format` / `pnpm format:check` |
-| Dead code            | `pnpm deadcode`                     |
-| Tests                | `pnpm test`                         |
-| Build                | `pnpm build`                        |
-| New DB migration     | `pnpm db:generate`                  |
+| Task                    | Command                             |
+| ----------------------- | ----------------------------------- |
+| Type-check              | `pnpm typecheck`                    |
+| Lint (zero warnings)    | `pnpm lint`                         |
+| Format                  | `pnpm format` / `pnpm format:check` |
+| Dead code               | `pnpm deadcode`                     |
+| Tests                   | `pnpm test`                         |
+| Build                   | `pnpm build`                        |
+| Storybook (packages/ui) | `pnpm storybook`                    |
+| New DB migration        | `pnpm db:generate`                  |
 
 Every feature ships with unit tests; the full checklist is
 [docs/definition-of-done.md](docs/definition-of-done.md). Contributing:

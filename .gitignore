@@ -8,6 +8,7 @@ dist
 out
 build
 coverage
+storybook-static
 *.tsbuildinfo
 next-env.d.ts
 

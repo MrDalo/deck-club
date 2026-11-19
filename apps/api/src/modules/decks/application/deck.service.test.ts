@@ -71,4 +71,22 @@ describe('DeckService', () => {
     expect(await deckService.list('user-1')).toEqual([]);
     expect(store.decks.get(deck.id)?.deletedAt).toBeInstanceOf(Date);
   });
+
+  it('reads decks by id whoever owns them, leaving out deleted and unknown ones', async () => {
+    const { deckService } = createDecksTestKit();
+    const anas = await deckService.create('user-1', command);
+    const bens = await deckService.create('user-2', { ...command, title: 'Ben’s deck' });
+    const deleted = await deckService.create('user-1', { ...command, title: 'Gone' });
+    await deckService.remove('user-1', deleted.id);
+
+    const decks = await deckService.findMany([
+      anas.id,
+      bens.id,
+      deleted.id,
+      '00000000-0000-4000-8000-999999999999',
+    ]);
+
+    expect(decks.map((deck) => deck.title).sort()).toEqual(['Ben’s deck', 'Spanish verbs']);
+    expect(await deckService.findMany([])).toEqual([]);
+  });
 });

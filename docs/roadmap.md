@@ -6,7 +6,7 @@ Phases come from spec 12. Each phase ships as vertical slices
 <!-- status:start -->
 
 Phase 0 (foundation) done: monorepo, CI, Docker, Claude setup, decks + cards CRUD in API, web and MCP.
-Study API done (FSRS-6 via ts-fsrs 5, reviews, undo, Today, stats). MCP server rebuilt on SDK v2 (stateless) with Supabase OAuth 2.1, readiness and the full spec 9 interface (ADR 0008); `list_decks`, `get_deck`, `search_cards` (with `GET /cards/search` in the API), `create_deck`, `add_cards`, `update_card` and `delete_cards` are implemented with their MCP Apps views. Next: the study tools (`get_due_cards`, `submit_review`, `get_stats`) and the OAuth consent page in web.
+Study API done (FSRS-6 via ts-fsrs 5, reviews, undo, Today, stats). MCP server rebuilt on SDK v2 (stateless) with Supabase OAuth 2.1, readiness and the full spec 9 interface (ADR 0008); `list_decks`, `get_deck`, `search_cards` (with `GET /cards/search` in the API), `create_deck`, `add_cards`, `update_card`, `delete_cards`, `get_due_cards`, `submit_review` and `get_stats` are implemented with their MCP Apps views (every Phase 1 tool). Next: the OAuth consent page in web and the web study slice.
 <!-- status:end -->
 
 ## Phase 0 — Foundation ✅
@@ -33,7 +33,10 @@ Study API done (FSRS-6 via ts-fsrs 5, reviews, undo, Today, stats). MCP server r
 - [x] **`update_card` over the API**: `PATCH /decks/:id/cards/:cardId` (only the fields sent, type, author and study state kept), with its MCP Apps view (the card now, each change before and after, "Undo this change" through the host)
 - [x] **`delete_cards` over the API**: one `DELETE` per card, every id answered (deleted, not found, not deleted when Deck Club stops part-way), with its MCP Apps view (the deleted cards and "Add them back as new cards" through the host, with a stable idempotency key)
 - [ ] **Restoring deleted cards** (spec 3: soft delete for 30 days, so mistakes can be undone): an API endpoint and a screen in the web app; then the cards deleted view offers a true restore that keeps study progress
-- [ ] **Study slice, MCP**: `get_due_cards`, `submit_review`, `get_stats` in `apps/mcp` over the study endpoints above
+- [x] **`get_due_cards` over the API**: `GET /study/due` (session order and daily limits are the API's), one deck or all, with its MCP Apps view (each question on an index card, the answer face down until shown, "Quiz me in the chat"); `deckUrl`/`libraryUrl` moved to the shared kernel (`common/web/`)
+- [x] **`submit_review` over the API**: `POST /study/reviews` with the AI's `idempotencyKey` (a retried rating is recorded once), "Added by" provenance as the review's source; rated from the study session view through the host (Again/Hard/Good/Easy with when the card comes back, a key per session and card, focus to the next card, ratings shared with the assistant as model context, "Next cards"); write-retry advice and `timeUntil` moved to the shared kernel
+- [x] **`get_stats` over the API**: `GET /study/stats` and `GET /study/today`, with weak cards added to the stats in the API (study domain rule: a side rated Again at least twice in 30 days, at most 5, content through the decks facade); its MCP Apps view (streak, today's progress bar, retention and total tiles, still due per deck with "Quiz me", weak cards with "Help me remember it", "Refresh" through the host)
+- [ ] Correcting a rating through MCP (the API's undo); the workload forecast (spec 6) in the stats
 - [ ] **Study slice, web**: Today dashboard, review session (Space, 1–4, interval hints, undo), session summary
 - [ ] **MCP OAuth 2.1, web side**: the consent page Supabase's OAuth server redirects to, scope grants per AI connection (read by `grantedScopes`), AI connections in Settings (list, revoke); then retire the pasted token. The MCP side is done (see MCP platform).
 - [ ] Duplicate detection on `add_cards` (reusing the card search rule); per-user rate limits (60 calls/min, 2,000 cards/day)
@@ -43,6 +46,10 @@ Study API done (FSRS-6 via ts-fsrs 5, reviews, undo, Today, stats). MCP server r
 - [ ] Playwright E2E for spec 4.1–4.5 and an accessibility check in CI
 
 ## Phase 2 — Clubs and leagues
+
+- [x] **`list_clubs` in the MCP server**: `GET /clubs` defined in contracts (`ClubListSchema`: what a member may see, the invite code only for roles that may invite), the tool and its MCP Apps view (clubs, the user's role, members, invite code, shared decks as library tiles). `credentialsOf` and `countLabel` moved to the shared kernel.
+- [x] **Clubs module in the API** (ADR 0010: clubs share decks by link, the deck stays its author's): `clubs`, `club_members`, `club_decks` (migration 0003); `GET /clubs`, `POST /clubs` (idempotent; creator is owner, unambiguous 8-character invite code), `POST /clubs/join` (any case, with or without the dash; 100 members at most, checked atomically), `POST /clubs/:clubId/decks` (owners and admins share their own decks); `DecksFacade.listDecksByIds`; verified end to end with `list_clubs` over HTTP
+- [ ] **Club decks for members** (spec 7): members read and study decks their club shares, admins edit them (a `ClubsFacade` behind a port in decks and study); then web screens for clubs, and `suggest_club_cards`
 
 Clubs, invites, roles, shared decks, suggestions, `list_clubs`,
 `suggest_club_cards`, weekly league job, Cloze and Type-in, Stats screen.

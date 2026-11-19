@@ -14,7 +14,7 @@ describe('VIEW_ENTRIES', () => {
       await expect(access(path.join(process.cwd(), entry))).resolves.toBeUndefined();
   });
 
-  it('builds the views of the seven tools with a UI so far', () => {
+  it('builds a view for every view the server publishes', () => {
     expect(Object.keys(VIEW_ENTRIES)).toEqual([
       'deckLibrary',
       'deck',
@@ -23,6 +23,9 @@ describe('VIEW_ENTRIES', () => {
       'cardsAdded',
       'cardUpdated',
       'cardsDeleted',
+      'studySession',
+      'stats',
+      'clubList',
     ]);
   });
 });

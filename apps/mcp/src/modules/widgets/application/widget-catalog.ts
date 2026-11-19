@@ -57,11 +57,18 @@ export const WIDGET_CATALOG: Readonly<Record<WidgetKey, WidgetDescription>> = {
     name: 'study_session_view',
     title: 'Study session',
     description:
-      'Due cards to review in the chat: reveal the answer, then rate how well you knew it.',
+      'The cards due for review now, each answer hidden until you show it, then rated Again, Hard, Good or Easy right here, or in a quiz in the chat.',
   },
   stats: {
     name: 'stats_view',
     title: 'Stats',
-    description: 'Your streak, today’s progress and retention at a glance.',
+    description:
+      'Your streak, today’s progress and retention at a glance, what is still due per deck, and the cards you keep forgetting.',
+  },
+  clubList: {
+    name: 'club_list_view',
+    title: 'Your clubs',
+    description:
+      'The clubs you belong to, your role in each, how many members they have, and the decks they share.',
   },
 };

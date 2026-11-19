@@ -12,6 +12,10 @@ export const ERROR_CODES = {
   ROUTE_NOT_FOUND: 404,
   DECK_NOT_FOUND: 404,
   CARD_NOT_FOUND: 404,
+  /** A club that does not exist, that the caller is not a member of, or an unknown invite code. */
+  CLUB_NOT_FOUND: 404,
+  /** A club that already has as many members as it may hold (spec 7: 100 in v1). */
+  CLUB_FULL: 409,
   /** A review asked for the reverse side of a card that is not reversible. */
   DIRECTION_NOT_STUDIED: 422,
   /** Undo was asked for, but there is no rating from today to take back. */

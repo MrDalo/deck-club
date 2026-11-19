@@ -1,7 +1,7 @@
 import type { McpToolName } from '@deck-club/contracts';
 import { App, PostMessageTransport } from '@modelcontextprotocol/ext-apps';
 import type { ZodType } from 'zod';
-import { notice, SEARCH_FIELD_NAME } from '../components.js';
+import { FOCUS_ATTRIBUTE, notice, SEARCH_FIELD_NAME } from '../components.js';
 import { hostActionFor } from '../host-actions.js';
 
 /** The element every view renders into (see `widgetDocument`). */
@@ -76,8 +76,13 @@ export function startView<Data>(view: ViewDefinition<Data>): void {
   const root = document.getElementById(VIEW_ROOT_ID);
   let shown: Data | undefined;
 
+  // A redraw keeps what the user opened: a disclosure with an id (e.g. a
+  // revealed answer) that is still there stays open.
   const show = (html: string): void => {
-    if (root !== null) root.innerHTML = html;
+    if (root === null) return;
+    const opened = [...root.querySelectorAll('details[open][id]')].map((element) => element.id);
+    root.innerHTML = html;
+    for (const id of opened) document.getElementById(id)?.setAttribute('open', '');
   };
   const context: ViewContext<Data> = {
     app,
@@ -103,10 +108,15 @@ export function startView<Data>(view: ViewDefinition<Data>): void {
       control.disabled = true;
       control.setAttribute('aria-busy', 'true');
     }
-    handler(value, context).catch((error: unknown) => {
-      console.error(`Deck Club view action "${name}" failed`, error);
-      context.notice('That did not work. Try again in a moment.');
-    });
+    handler(value, context)
+      .then(() => {
+        // The pressed control is gone with the redraw; focus goes where the view marked.
+        root?.querySelector<HTMLElement>(`[${FOCUS_ATTRIBUTE}]`)?.focus();
+      })
+      .catch((error: unknown) => {
+        console.error(`Deck Club view action "${name}" failed`, error);
+        context.notice('That did not work. Try again in a moment.');
+      });
   };
 
   root?.addEventListener('click', (event) => {

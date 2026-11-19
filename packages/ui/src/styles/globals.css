@@ -1,0 +1,8 @@
+/*
+ * The precompiled stylesheet (`@deck-club/ui/styles.css`, built into dist/):
+ * Tailwind's preflight, the theme and exactly the utilities this package's
+ * components use. For consumers without their own Tailwind build, such as
+ * the MCP Apps views. `source(none)`: scan only what theme.css names.
+ */
+@import 'tailwindcss' source(none);
+@import './theme.css';

@@ -1,13 +1,18 @@
 import type { Client } from '@modelcontextprotocol/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { connectFeature, testCaller, textOf } from '../../../common/mcp/testing/mcp-test-client.js';
-import { ClubsService } from '../application/clubs.service.js';
+import { WIDGET_URIS } from '../../../common/mcp/widgets.js';
+import type { ClubsService } from '../application/clubs.service.js';
+import { createClubsService } from '../testing/clubs-test-kit.js';
+import { FakeClubsApi, testClub, testClubDeck } from '../testing/fake-clubs-api.js';
 import { ClubsMcpFeature } from './clubs.mcp-feature.js';
 
 const DECK_ID = '00000000-0000-4000-8000-000000000001';
 let client: Client | undefined;
 
-async function connect(service = new ClubsService(), caller = testCaller()): Promise<Client> {
+const serviceOver = (api = new FakeClubsApi()): ClubsService => createClubsService(api).clubs;
+
+async function connect(service = serviceOver(), caller = testCaller()): Promise<Client> {
   client = await connectFeature(new ClubsMcpFeature(service), caller);
   return client;
 }
@@ -32,18 +37,58 @@ describe('ClubsMcpFeature', () => {
   });
 
   it('refuses every club tool when the AI connection lacks the clubs scope', async () => {
+    const api = new FakeClubsApi();
     const result = await (
-      await connect(new ClubsService(), testCaller({ scopes: ['decks:read', 'study'] }))
+      await connect(serviceOver(api), testCaller({ scopes: ['decks:read', 'study'] }))
     ).callTool({
       name: 'list_clubs',
       arguments: {},
     });
 
     expect(textOf(result)).toMatch(/^REJECTED: FORBIDDEN\. .*"clubs"/);
+    expect(api.callers).toEqual([]);
+  });
+
+  it('links the club list view and declares the shape it renders', async () => {
+    const { tools } = await (await connect()).listTools();
+    const listClubs = tools.find((tool) => tool.name === 'list_clubs');
+
+    expect((listClubs?._meta?.ui as { resourceUri?: string } | undefined)?.resourceUri).toBe(
+      WIDGET_URIS.clubList,
+    );
+    expect(listClubs?.outputSchema).toMatchObject({
+      type: 'object',
+      required: expect.arrayContaining(['clubs', 'clubCount', 'libraryUrl']) as string[],
+    });
+    expect(listClubs?.annotations).toMatchObject({ readOnlyHint: true });
+  });
+
+  it('lists the user’s clubs for the model and, validated, for the view', async () => {
+    const api = new FakeClubsApi().withClubs('token-ana', [
+      testClub({
+        id: DECK_ID,
+        name: 'Spanish Fridays',
+        decks: [testClubDeck({ id: DECK_ID, title: 'Spanish verbs' })],
+      }),
+    ]);
+
+    const result = await (
+      await connect(serviceOver(api))
+    ).callTool({
+      name: 'list_clubs',
+      arguments: {},
+    });
+
+    expect(result.isError).toBeFalsy();
+    expect(textOf(result)).toMatch(/^The user belongs to 1 club:/);
+    expect(result.structuredContent).toMatchObject({
+      clubCount: 1,
+      clubs: [{ name: 'Spanish Fridays', role: 'owner', decks: [{ title: 'Spanish verbs' }] }],
+    });
   });
 
   it('fills the spec 8 battle defaults before the use case runs', async () => {
-    const service = new ClubsService();
+    const service = serviceOver();
     const createBattle = vi
       .spyOn(service, 'createBattle')
       .mockResolvedValue({ text: 'Join with code ABCD.' });

@@ -14,6 +14,10 @@
       "entry": ["src/index.ts"],
       "project": ["src/**/*.ts"]
     },
+    "packages/ui": {
+      "entry": ["src/components/*/index.tsx", "src/ui/**/*.{ts,tsx,css}", "scripts/*.mjs"],
+      "project": ["src/**/*.{ts,tsx,css,mdx}", "scripts/*.mjs"]
+    },
     "apps/api": {
       "project": ["src/**/*.ts", "test/**/*.ts"]
     },

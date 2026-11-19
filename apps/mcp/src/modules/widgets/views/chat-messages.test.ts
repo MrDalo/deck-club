@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ASK_FOR_DUE_QUIZ,
+  ASK_FOR_STATS,
+  askForHelpWithCard,
+  askForNextDueCards,
+  askToRate,
   ASK_TO_CREATE_DECK,
   askForCards,
   askForCardsAbout,
@@ -16,6 +21,14 @@ describe('chat messages', () => {
   it('ask the assistant in the user’s own words, naming the deck', () => {
     expect(askForCards('Biology')).toBe('Add 10 new cards to my "Biology" deck.');
     expect(askForQuiz('Biology')).toBe('Quiz me on my "Biology" deck.');
+    expect(ASK_FOR_DUE_QUIZ).toBe('Quiz me on my due cards.');
+    expect(askToRate('hablar', 'good')).toBe('Mark my card "hablar" as "good".');
+    expect(askForHelpWithCard('hablar')).toBe(
+      'Help me remember my card "hablar": I keep forgetting it.',
+    );
+    expect(ASK_FOR_STATS).toBe('Show me my Deck Club stats.');
+    expect(askForNextDueCards(null)).toBe('Show me my next due cards.');
+    expect(askForNextDueCards('Biology')).toBe('Show me my next due cards in my "Biology" deck.');
     expect(askForMoreCards('Biology')).toBe('Show me the next cards of my "Biology" deck.');
     expect(askForCardsAbout('mitosis')).toBe('Make 10 cards about "mitosis".');
     expect(askToSearch('mitosis')).toBe('Search my cards for "mitosis".');

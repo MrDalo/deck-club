@@ -100,6 +100,156 @@ function deckEndpoints(url: URL, init: RequestInit, writes: DeckWrites): Respons
 }
 
 /**
+ * `GET /study/due` as the fake answers it: every card of {@link API_DECK}
+ * is new and due for Ana, in the order added, cut to `limit`; anyone else
+ * has nothing due, and a deck that is not theirs is 404, like the API.
+ */
+function dueCardsEndpoint(url: URL, init: RequestInit): Response {
+  const isAna = new Headers(init.headers).get('authorization') === `Bearer ${TOKENS.ana}`;
+  const deckId = url.searchParams.get('deckId');
+  if (deckId !== null && (!isAna || deckId !== API_DECK.id))
+    return Response.json(DECK_NOT_FOUND, { status: 404 });
+  const due = isAna ? API_CARDS : [];
+  const limit = Number(url.searchParams.get('limit') ?? 20);
+  return Response.json({
+    cards: due.slice(0, limit).map((card) => ({
+      deckId: API_DECK.id,
+      deckTitle: API_DECK.title,
+      cardId: card.id,
+      direction: 'forward',
+      cardType: card.type,
+      state: 'new',
+      prompt: card.front,
+      answer: card.back,
+      extra: card.extra,
+      nextDue: {
+        again: '2026-11-17T10:01:00.000Z',
+        hard: '2026-11-17T10:06:00.000Z',
+        good: '2026-11-17T10:10:00.000Z',
+        easy: '2026-11-20T10:00:00.000Z',
+      },
+    })),
+    totalDue: due.length,
+  });
+}
+
+/**
+ * `GET /study/stats` and `GET /study/today` as the fake answers them: Ana
+ * has a streak, a weak card (the first of {@link API_CARDS}) and cards due
+ * in {@link API_DECK}; anyone else has not started.
+ */
+function statsEndpoint(url: URL, init: RequestInit): Response {
+  const isAna = new Headers(init.headers).get('authorization') === `Bearer ${TOKENS.ana}`;
+  if (url.pathname === '/study/today')
+    return Response.json({
+      decks: isAna
+        ? [{ deckId: API_DECK.id, title: API_DECK.title, dueReviews: 4, newCards: 6 }]
+        : [],
+      totals: isAna ? { dueReviews: 4, newCards: 6 } : { dueReviews: 0, newCards: 0 },
+      reviewedToday: isAna ? 10 : 0,
+      streakDays: isAna ? 3 : 0,
+    });
+  const [weak] = API_CARDS;
+  return Response.json({
+    streakDays: isAna ? 3 : 0,
+    reviewedToday: isAna ? 10 : 0,
+    totalReviews: isAna ? 120 : 0,
+    retention30d: isAna ? 0.85 : null,
+    weakCards:
+      isAna && weak !== undefined
+        ? [
+            {
+              deckId: API_DECK.id,
+              deckTitle: API_DECK.title,
+              cardId: weak.id,
+              direction: 'forward',
+              cardType: weak.type,
+              prompt: weak.front,
+              answer: weak.back,
+              extra: weak.extra,
+              forgotten: 4,
+              lastForgottenAt: '2026-11-16T10:00:00.000Z',
+            },
+          ]
+        : [],
+  });
+}
+
+/** The club Ana owns, sharing {@link API_DECK}. */
+export const API_CLUB = {
+  id: '00000000-0000-4000-8000-0000000000b1',
+  name: 'Spanish Fridays',
+  description: 'We meet on Fridays.',
+  visibility: 'private',
+  role: 'owner',
+  memberCount: 12,
+  memberLimit: 100,
+  inviteCode: 'FRIDAY-42',
+  joinedAt: '2026-11-01T10:00:00.000Z',
+  decks: [
+    {
+      id: API_DECK.id,
+      title: API_DECK.title,
+      description: API_DECK.description,
+      language: API_DECK.language,
+      cardCount: API_DECK.cardCount,
+    },
+  ],
+} as const;
+
+/** `GET /clubs` as the fake answers it: Ana owns {@link API_CLUB}; anyone else is in no club. */
+function clubsEndpoint(init: RequestInit): Response {
+  const isAna = new Headers(init.headers).get('authorization') === `Bearer ${TOKENS.ana}`;
+  return Response.json({ clubs: isAna ? [API_CLUB] : [] });
+}
+
+/** A review the fake API recorded, with the headers it came with. */
+type RecordedTestReview = {
+  body: { deckId: string; cardId: string; direction: string; rating: string };
+  clientName: string | null;
+};
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * `POST /study/reviews` as the fake answers it: Ana may rate the cards of
+ * {@link API_DECK}, the reverse side only of a reversible card; the card
+ * comes back a day later, in review. Anyone else's deck is 404, like the API.
+ */
+function reviewEndpoint(init: RequestInit, reviews: RecordedTestReview[]): Response {
+  const body = jsonBody(init) as RecordedTestReview['body'];
+  const headers = new Headers(init.headers);
+  const isAna = headers.get('authorization') === `Bearer ${TOKENS.ana}`;
+  if (!isAna || body.deckId !== API_DECK.id) return Response.json(DECK_NOT_FOUND, { status: 404 });
+  const card = API_CARDS.find((each) => each.id === body.cardId);
+  if (card === undefined) return Response.json(CARD_NOT_FOUND, { status: 404 });
+  if (body.direction === 'reverse' && card.type !== 'reversible')
+    return Response.json(
+      {
+        type: 'about:blank',
+        title: 'DIRECTION_NOT_STUDIED',
+        status: 422,
+        code: 'DIRECTION_NOT_STUDIED',
+        detail: 'Only reversible cards are studied in the reverse direction.',
+        traceId: 'trace-test',
+      },
+      { status: 422 },
+    );
+  reviews.push({ body, clientName: headers.get(CLIENT_NAME_HEADER) });
+  return Response.json(
+    {
+      reviewId: `00000000-0000-4000-8000-${String(600 + reviews.length).padStart(12, '0')}`,
+      cardId: card.id,
+      direction: body.direction,
+      rating: body.rating,
+      state: body.rating === 'again' ? 'learning' : 'review',
+      nextDueAt: new Date(Date.now() + DAY_MS).toISOString(),
+    },
+    { status: 201 },
+  );
+}
+
+/**
  * `DELETE /decks/:deckId/cards/:cardId` as the fake answers it: 204, and
  * the card is gone from every later read; a card not there is 404.
  */
@@ -229,6 +379,7 @@ export type TestServer = {
   /**
    * The fake API: `addedCards` holds what add_cards wrote, `updatedCards`
    * what update_card changed, `deletedCards` what delete_cards deleted,
+   * `reviews` what submit_review recorded,
    * `idempotencyKeys` the key of every write (null
    * without one) and `answered` the writes it remembers per key; reset them
    * with {@link resetWrites} after a test.
@@ -240,6 +391,8 @@ export type TestServer = {
     addedCards: Card[];
     updatedCards: Map<string, Card>;
     deletedCards: Set<string>;
+    /** Reviews submit_review recorded. */
+    reviews: RecordedTestReview[];
     idempotencyKeys: (string | null)[];
     answered: Map<string, AnsweredWrite>;
   };
@@ -254,6 +407,7 @@ export function resetWrites(server: TestServer): void {
   server.api.addedCards.length = 0;
   server.api.updatedCards.clear();
   server.api.deletedCards.clear();
+  server.api.reviews.length = 0;
   server.api.idempotencyKeys.length = 0;
   server.api.answered.clear();
 }
@@ -282,6 +436,7 @@ export async function startTestServer(): Promise<TestServer> {
     addedCards: [] as Card[],
     updatedCards: new Map<string, Card>(),
     deletedCards: new Set<string>(),
+    reviews: [] as RecordedTestReview[],
     idempotencyKeys: [] as (string | null)[],
     answered: new Map<string, AnsweredWrite>(),
   };
@@ -289,6 +444,18 @@ export async function startTestServer(): Promise<TestServer> {
     api.requests.push(url);
     if (init.body !== undefined) api.bodies.push(jsonBody(init));
     if (!api.healthy) return Promise.reject(new TypeError('fetch failed'));
+    if (url.pathname === '/study/due') return Promise.resolve(dueCardsEndpoint(url, init));
+    if (url.pathname === '/clubs') return Promise.resolve(clubsEndpoint(init));
+    if (url.pathname === '/study/stats' || url.pathname === '/study/today')
+      return Promise.resolve(statsEndpoint(url, init));
+    if (url.pathname === '/study/reviews' && init.method === 'POST') {
+      const key = new Headers(init.headers).get(IDEMPOTENCY_KEY_HEADER);
+      api.idempotencyKeys.push(key);
+      const write = (): Response => reviewEndpoint(init, api.reviews);
+      return key === null
+        ? Promise.resolve(write())
+        : answerOnce({ url, init, key, answered: api.answered, run: write });
+    }
     if (url.pathname.startsWith('/decks') || url.pathname === '/cards/search') {
       const write = (): Response =>
         deckEndpoints(url, init, {

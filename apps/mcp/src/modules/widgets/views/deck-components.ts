@@ -9,6 +9,8 @@ export type DeckTileOptions = {
   extraChips?: readonly string[];
   /** Buttons at the bottom of the tile. */
   actions: string;
+  /** The title's heading level: 2 in a list of decks, 3 under a heading of its own (a club). */
+  headingLevel?: 2 | 3;
 };
 
 /**
@@ -19,6 +21,7 @@ export type DeckTileOptions = {
  * @returns a list item
  */
 export function deckTile(deck: DeckSummary, options: DeckTileOptions): string {
+  const level = options.headingLevel ?? 2;
   const description =
     deck.description === ''
       ? ''
@@ -28,7 +31,7 @@ export function deckTile(deck: DeckSummary, options: DeckTileOptions): string {
         <article class="deck" style="--deck-accent: ${deckAccent(deck.id)}">
           <span class="deck-tab" aria-hidden="true"></span>
           <div class="deck-body">
-            <h2>${escapeHtml(deck.title)}</h2>
+            <h${level}>${escapeHtml(deck.title)}</h${level}>
             ${description}
             <p class="deck-meta">
               ${chip(deck.language, 'paper', `Language: ${deck.language}`)}

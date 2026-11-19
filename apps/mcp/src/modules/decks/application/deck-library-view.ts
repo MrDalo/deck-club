@@ -1,15 +1,6 @@
 import type { Deck, DeckSummary, ListDecksOutput } from '@deck-club/contracts';
-
-/**
- * Where a deck lives in the web app, so the AI can link the user to it and
- * the view can open it.
- * @param webUrl - the web app's public URL
- * @param deckId - the deck
- * @returns the deck's page
- */
-export function deckUrl(webUrl: string, deckId: string): string {
-  return new URL(`/decks/${deckId}`, webUrl).toString();
-}
+import { countLabel } from '../../../common/text/count-label.js';
+import { deckUrl, libraryUrl } from '../../../common/web/web-links.js';
 
 /**
  * A deck as both deck tools show it: what the AI and the views need, with
@@ -40,7 +31,7 @@ export function toDeckLibrary(decks: readonly Deck[], webUrl: string): ListDecks
   return {
     decks: decks.map((deck) => toDeckSummary(deck, webUrl)),
     deckCount: decks.length,
-    libraryUrl: new URL('/decks', webUrl).toString(),
+    libraryUrl: libraryUrl(webUrl),
   };
 }
 
@@ -49,8 +40,7 @@ export function toDeckLibrary(decks: readonly Deck[], webUrl: string): ListDecks
  * @param count - how many cards
  * @returns the label
  */
-export const cardCountLabel = (count: number): string =>
-  count === 1 ? '1 card' : `${count} cards`;
+export const cardCountLabel = (count: number): string => countLabel(count, 'card');
 
 /**
  * The same result written for the AI to read and relay: one line per deck,

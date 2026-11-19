@@ -1,10 +1,12 @@
 import {
   CreateBattleToolInputSchema,
+  ListClubsOutputSchema,
   ListClubsToolInputSchema,
   SuggestClubCardsToolInputSchema,
 } from '@deck-club/contracts';
 import type { StandardSchemaWithJSON } from '@modelcontextprotocol/server';
 import type { ToolSpec } from '../../../common/mcp/tool-registration.js';
+import { WIDGET_URIS } from '../../../common/mcp/widgets.js';
 
 /** The club tools as the AI sees them (spec 9; descriptions written for the AI). */
 export const CLUB_TOOLS = {
@@ -12,9 +14,11 @@ export const CLUB_TOOLS = {
     name: 'list_clubs',
     title: 'List clubs',
     description:
-      'List the clubs the user belongs to, with their shared decks and the user’s role. Call it before suggest_club_cards or create_battle to find club and deck ids.',
+      'List the clubs the user belongs to, with the user’s role in each (owner, admin or member), the member count and the decks each club shares. Call it before suggest_club_cards or create_battle to find club and deck ids. Only owners and admins see a club’s invite code; share it only if the user asks.',
     inputSchema: ListClubsToolInputSchema,
+    outputSchema: ListClubsOutputSchema,
     annotations: { readOnlyHint: true },
+    widgetUri: WIDGET_URIS.clubList,
   },
   suggestClubCards: {
     name: 'suggest_club_cards',

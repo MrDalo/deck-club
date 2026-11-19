@@ -1,6 +1,7 @@
 export * from './auth.js';
 export * from './card.js';
 export * from './card-search.js';
+export * from './club.js';
 export * from './deck.js';
 export * from './errors.js';
 export * from './health.js';

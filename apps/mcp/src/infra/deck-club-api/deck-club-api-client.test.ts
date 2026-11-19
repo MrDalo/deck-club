@@ -2,7 +2,8 @@ import { CardListSchema, DeckSchema, HealthSchema } from '@deck-club/contracts';
 import { describe, expect, it, vi } from 'vitest';
 import { DeckClubError } from '../../common/errors/deck-club-error.js';
 import type { FetchFunction } from '../../common/http/fetch-function.js';
-import { DeckClubApiClient, toApiError } from './deck-club-api-client.js';
+import { testCaller } from '../../common/mcp/testing/mcp-test-client.js';
+import { credentialsOf, DeckClubApiClient, toApiError } from './deck-club-api-client.js';
 
 const credentials = { accessToken: 'token-ana', clientName: 'Claude' };
 const DECK = {
@@ -247,5 +248,14 @@ describe('toApiError, field problems', () => {
     };
 
     expect(toApiError(problem, 404).issues).toEqual([]);
+  });
+});
+
+describe('credentialsOf', () => {
+  it('sends the caller’s own token and the AI client’s name, nothing else', () => {
+    expect(credentialsOf(testCaller({ accessToken: 'token-ben', clientName: 'ChatGPT' }))).toEqual({
+      accessToken: 'token-ben',
+      clientName: 'ChatGPT',
+    });
   });
 });
