@@ -62,7 +62,7 @@ catalog:
   drizzle-kit: ^0.31.11
   '@libsql/client': ^0.18.0
   # scheduling (spec 6, ADR 0007). 5.x because 6.x requires Node 24 and we support Node 22
-  ts-fsrs: ^5.4.2
+  ts-fsrs: ^6.0.0
   # web
   # 16.4.5 is the security release (7 advisories, incl. GHSA-pc58-hwjq-p385 on
   # forwarded fetch responses, which /api/v1 does). Pinned; see the age exclusions below.
